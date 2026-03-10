@@ -4,9 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { CurrentSongProvider } from '@/hooks/use-current-song';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: '(tabs)',
 };
 
 export default function RootLayout() {
@@ -14,11 +15,28 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <CurrentSongProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="now-playing" 
+            options={{ 
+              presentation: 'card',
+              headerShown: false,
+              animation: 'slide_from_bottom',
+            }} 
+          />
+          <Stack.Screen 
+            name="queue" 
+            options={{ 
+              presentation: 'modal',
+              headerShown: false,
+              animation: 'slide_from_bottom',
+            }} 
+          />
+        </Stack>
+        <StatusBar style="auto" />
+      </CurrentSongProvider>
     </ThemeProvider>
   );
 }

@@ -48,3 +48,60 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+## Project Structure
+
+Pillow
+├── .expo/
+├── .vscode
+├── app/
+│   ├── (tabs)/
+│   │   ├── _layout.tsx
+│   │   ├── albums.tsx
+│   │   ├── artists.tsx
+│   │   ├── favourites.tsx
+│   │   ├── playlists.tsx
+│   │   └── songs.tsx
+│   │
+│   ├── _layout.tsx
+│   ├── index.tsx              (new - redirects to songs)
+│   ├── now-playing.tsx        (moved from explore.tsx)
+│   └── queue.tsx              (renamed from modal.tsx)
+│
+├── assets/
+├── components/
+│   ├── ui/
+│   │   ├── collapsible.tsx
+│   │   ├── icon-symbol.ios.tsx
+│   │   └── icon-symbol.tsx
+│   │
+│   ├── external-link.tsx
+│   ├── haptic-tab.tsx
+│   ├── hello-wave.tsx
+│   ├── mini-player.tsx        (new - extracted mini player component)
+│   ├── parallax-scroll-view.tsx
+│   ├── themed-text.tsx
+│   └── themed-view.tsx
+│
+├── constants/
+│   └── theme.ts
+│
+├── hooks/
+│   ├── use-color-scheme.ts
+│   ├── use-color-scheme.web.ts
+│   ├── use-theme-color.ts
+│   └── use-current-song.ts
+│
+├── node_modules/
+├── scripts/
+│   └── reset-project.js
+│
+├── .gitignore
+├── app.json
+├── eslint.config.js
+├── expo-env.d.ts
+├── LICENSE
+├── package.json
+├── README.md
+└── tsconfig.json
