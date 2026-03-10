@@ -1,298 +1,274 @@
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
-import { ThemedView } from '@/components/themed-view';
+import { Image } from 'expo-image';
+import { StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withRepeat,
+  withTiming,
+  Easing,
+  withSequence,
+  withSpring
+} from 'react-native-reanimated';
+import { useState } from 'react';
+
 import { ThemedText } from '@/components/themed-text';
-import { FilterTabs } from '@/components/ui/filter-tabs';
-import { SongItem } from '@/components/ui/song-item';
-import { OptionsModal } from '@/components/ui/options-modal';
-import { useMusicFiles } from '@/hooks/use-music-files';
-import { FilterTab, Song } from '@/types/music';
-import { PillowColors } from '@/constants/colors';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { Colors } from '@/constants/theme';
 
-export default function LibraryScreen() {
-  const [activeTab, setActiveTab] = useState<FilterTab>('songs');
-  const [optionsVisible, setOptionsVisible] = useState(false);
-  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+const { width } = Dimensions.get('window');
 
-  const { songs, albums, artists, folders } = useMusicFiles();
+export default function NowPlayingScreen() {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const iconColor = useThemeColor({}, 'icon');
+  const tintColor = useThemeColor({}, 'tint');
+  
+  // Animation for the album art
+  const rotation = useSharedValue(0);
+  const scale = useSharedValue(1);
 
-  const handleOptionsPress = (song: Song) => {
-    setSelectedSong(song);
-    setOptionsVisible(true);
+  if (isPlaying) {
+    rotation.value = withRepeat(
+      withTiming(360, { 
+        duration: 8000, 
+        easing: Easing.linear 
+      }),
+      -1
+    );
+  } else {
+    rotation.value = withTiming(rotation.value, { duration: 300 });
+  }
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { rotate: `${rotation.value}deg` },
+        { scale: scale.value }
+      ],
+    };
+  });
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+    scale.value = withSequence(
+      withSpring(0.9),
+      withSpring(1)
+    );
   };
 
-  const handleSongPress = (song: Song) => {
-    console.log('Play song:', song.title);
-  };
-
-  const handleVisualize = () => {
-    console.log('Visualize:', selectedSong?.title);
-  };
-
-  const handleShare = () => {
-    console.log('Share:', selectedSong?.title);
-  };
-
-  const handleDelete = () => {
-    console.log('Delete:', selectedSong?.title);
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'songs':
-        return (
-          <View>
-            {songs.map(song => (
-              <SongItem
-                key={song.id}
-                song={song}
-                onPress={handleSongPress}
-                onOptionsPress={handleOptionsPress}
-              />
-            ))}
-          </View>
-        );
-      
-      case 'albums':
-        return (
-          <View style={styles.gridContainer}>
-            {albums.map(album => (
-              <TouchableOpacity key={album.id} style={styles.gridItem}>
-                <LinearGradient
-                  colors={[PillowColors.lemon, PillowColors.lightGrey]}
-                  style={styles.gridArtwork}
-                >
-                  <ThemedText style={styles.gridIcon}>💿</ThemedText>
-                </LinearGradient>
-                <ThemedText style={styles.gridTitle} numberOfLines={1}>
-                  {album.name}
-                </ThemedText>
-                <ThemedText style={styles.gridSubtitle} numberOfLines={1}>
-                  {album.artist}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-      
-      case 'artists':
-        return (
-          <View style={styles.gridContainer}>
-            {artists.map(artist => (
-              <TouchableOpacity key={artist.id} style={styles.gridItem}>
-                <LinearGradient
-                  colors={[PillowColors.green, PillowColors.lemon]}
-                  style={styles.gridArtwork}
-                >
-                  <ThemedText style={styles.gridIcon}>👤</ThemedText>
-                </LinearGradient>
-                <ThemedText style={styles.gridTitle} numberOfLines={1}>
-                  {artist.name}
-                </ThemedText>
-                <ThemedText style={styles.gridSubtitle} numberOfLines={1}>
-                  {artist.songCount} songs
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-      
-      case 'folders':
-        return (
-          <View>
-            {folders.map(folder => (
-              <TouchableOpacity key={folder.id} style={styles.folderItem}>
-                <View style={styles.folderIcon}>
-                  <ThemedText style={styles.folderIconText}>📁</ThemedText>
-                </View>
-                <View style={styles.folderInfo}>
-                  <ThemedText style={styles.folderName}>{folder.name}</ThemedText>
-                  <ThemedText style={styles.folderPath} numberOfLines={1}>
-                    {folder.path}
-                  </ThemedText>
-                  <ThemedText style={styles.folderSongCount}>
-                    {folder.songCount} songs
-                  </ThemedText>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-      
-      case 'favourites':
-        return (
-          <View style={styles.emptyState}>
-            <ThemedText style={styles.emptyIcon}>❤️</ThemedText>
-            <ThemedText style={styles.emptyTitle}>No Favourites Yet</ThemedText>
-            <ThemedText style={styles.emptyDescription}>
-              Tap the heart icon on any song to add it to your favourites
-            </ThemedText>
-          </View>
-        );
-      
-      default:
-        return null;
-    }
+  // Mock current song data
+  const currentSong = {
+    title: 'Bohemian Rhapsody',
+    artist: 'Queen',
+    album: 'A Night at the Opera',
+    year: '1975',
+    duration: '5:55',
+    currentTime: '2:34',
   };
 
   return (
-    <LinearGradient
-      colors={[PillowColors.lightGrey, PillowColors.lemon]}
-      style={styles.gradient}
-    >
-      <ThemedView style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText style={styles.headerTitle}>Library</ThemedText>
-          <TouchableOpacity style={styles.searchButton}>
-            <ThemedText style={styles.searchIcon}>🔍</ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        <FilterTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-        <ScrollView 
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {renderContent()}
-        </ScrollView>
-
-        <OptionsModal
-          visible={optionsVisible}
-          onClose={() => setOptionsVisible(false)}
-          onVisualize={handleVisualize}
-          onShare={handleShare}
-          onDelete={handleDelete}
-          songTitle={selectedSong?.title}
-        />
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <ThemedView style={styles.header}>
+        <TouchableOpacity>
+          <IconSymbol name="chevron.down" size={24} color={iconColor} />
+        </TouchableOpacity>
+        <ThemedText type="subtitle">Now Playing</ThemedText>
+        <TouchableOpacity>
+          <IconSymbol name="ellipsis" size={24} color={iconColor} />
+        </TouchableOpacity>
       </ThemedView>
-    </LinearGradient>
+
+      {/* Album Art */}
+      <ThemedView style={styles.albumContainer}>
+        <Animated.View style={[styles.albumArt, animatedStyle]}>
+          <ThemedView style={[styles.albumInner, { backgroundColor: tintColor + '30' }]}>
+            <IconSymbol name="music.note" size={80} color={tintColor} />
+          </ThemedView>
+        </Animated.View>
+      </ThemedView>
+
+      {/* Song Info */}
+      <ThemedView style={styles.songInfo}>
+        <ThemedText type="title" style={styles.songTitle}>
+          {currentSong.title}
+        </ThemedText>
+        <ThemedText style={styles.songArtist}>{currentSong.artist}</ThemedText>
+        <ThemedText style={styles.songAlbum}>
+          {currentSong.album} • {currentSong.year}
+        </ThemedText>
+      </ThemedView>
+
+      {/* Progress Bar */}
+      <ThemedView style={styles.progressContainer}>
+        <ThemedView style={styles.progressBar}>
+          <ThemedView style={[styles.progressFill, { width: '45%', backgroundColor: tintColor }]} />
+        </ThemedView>
+        <ThemedView style={styles.timeContainer}>
+          <ThemedText style={styles.timeText}>{currentSong.currentTime}</ThemedText>
+          <ThemedText style={styles.timeText}>{currentSong.duration}</ThemedText>
+        </ThemedView>
+      </ThemedView>
+
+      {/* Main Controls */}
+      <ThemedView style={styles.controls}>
+        <TouchableOpacity>
+          <IconSymbol name="shuffle" size={24} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <IconSymbol name="backward.end.fill" size={32} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.playButton, { backgroundColor: tintColor }]}
+          onPress={handlePlayPause}>
+          <IconSymbol 
+            name={isPlaying ? "pause.fill" : "play.fill"} 
+            size={30} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <IconSymbol name="forward.end.fill" size={32} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <IconSymbol name="repeat" size={24} color={iconColor} />
+        </TouchableOpacity>
+      </ThemedView>
+
+      {/* Bottom Controls */}
+      <ThemedView style={styles.bottomControls}>
+        <TouchableOpacity>
+          <IconSymbol name="heart" size={24} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <IconSymbol name="airplayaudio" size={24} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <IconSymbol name="list.bullet" size={24} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <IconSymbol name="speaker.wave.2" size={24} color={iconColor} />
+        </TouchableOpacity>
+      </ThemedView>
+
+      {/* Up Next Preview */}
+      <TouchableOpacity style={styles.upNext}>
+        <ThemedView style={styles.upNextContent}>
+          <ThemedView>
+            <ThemedText style={styles.upNextLabel}>Next up</ThemedText>
+            <ThemedText type="defaultSemiBold">Shape of You - Ed Sheeran</ThemedText>
+          </ThemedView>
+          <IconSymbol name="chevron.right" size={20} color={iconColor} />
+        </ThemedView>
+      </TouchableOpacity>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    paddingTop: 60,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    marginBottom: 30,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: PillowColors.darkGrey,
+  albumContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
   },
-  searchButton: {
-    padding: 8,
-  },
-  searchIcon: {
-    fontSize: 24,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-  },
-  gridItem: {
-    width: '48%',
-    marginBottom: 20,
-  },
-  gridArtwork: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 12,
+  albumArt: {
+    width: width * 0.7,
+    height: width * 0.7,
+    borderRadius: width * 0.35,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  albumInner: {
+    width: '90%',
+    height: '90%',
+    borderRadius: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  songInfo: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  songTitle: {
+    fontSize: 28,
     marginBottom: 8,
+    textAlign: 'center',
   },
-  gridIcon: {
-    fontSize: 32,
-  },
-  gridTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  songArtist: {
+    fontSize: 18,
+    opacity: 0.8,
     marginBottom: 4,
   },
-  gridSubtitle: {
+  songAlbum: {
     fontSize: 14,
     opacity: 0.6,
   },
-  folderItem: {
+  progressContainer: {
+    marginBottom: 40,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(150,150,150,0.3)',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+    width: '45%',
+  },
+  timeContainer: {
     flexDirection: 'row',
-    padding: 16,
-    marginBottom: 8,
-    backgroundColor: PillowColors.white,
+    justifyContent: 'space-between',
+  },
+  timeText: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  playButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 30,
+  },
+  upNext: {
+    marginTop: 'auto',
+    marginBottom: 20,
+  },
+  upNextContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: 'rgba(150,150,150,0.1)',
   },
-  folderIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: PillowColors.lemon,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  folderIconText: {
-    fontSize: 24,
-  },
-  folderInfo: {
-    flex: 1,
-  },
-  folderName: {
-    fontSize: 16,
-    fontWeight: '600',
+  upNextLabel: {
+    fontSize: 12,
+    opacity: 0.6,
     marginBottom: 4,
-  },
-  folderPath: {
-    fontSize: 12,
-    opacity: 0.5,
-    marginBottom: 2,
-  },
-  folderSongCount: {
-    fontSize: 12,
-    opacity: 0.6,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    fontSize: 60,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyDescription: {
-    fontSize: 16,
-    opacity: 0.6,
-    textAlign: 'center',
   },
 });

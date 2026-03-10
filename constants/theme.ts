@@ -1,45 +1,40 @@
 /**
- * Theme configuration for Pillow app
+ * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
  */
 
 import { Platform } from 'react-native';
-import { PillowColors } from './colors';
 
-const tintColorLight = PillowColors.green;
-const tintColorDark = PillowColors.lemon;
+const tintColorLight = '#FF6B6B'; // Changed to a warmer red/pink for music app
+const tintColorDark = '#FF8E8E';
 
 export const Colors = {
   light: {
-    text: PillowColors.darkGrey,
-    background: PillowColors.lightGrey,
+    text: '#2D3436',
+    background: '#FFFFFF',
     tint: tintColorLight,
-    icon: PillowColors.darkGrey,
-    tabIconDefault: PillowColors.darkGrey,
+    icon: '#636E72',
+    tabIconDefault: '#B2BEC3',
     tabIconSelected: tintColorLight,
-    card: PillowColors.white,
-    border: '#E0E0E0',
-    accent: PillowColors.green,
-    secondary: PillowColors.lemon,
   },
   dark: {
-    text: PillowColors.lightGrey,
-    background: '#1A1A1A',
+    text: '#F5F6FA',
+    background: '#1E272E',
     tint: tintColorDark,
-    icon: PillowColors.lightGrey,
-    tabIconDefault: PillowColors.lightGrey,
+    icon: '#A5B1C2',
+    tabIconDefault: '#4B6584',
     tabIconSelected: tintColorDark,
-    card: '#2A2A2A',
-    border: '#404040',
-    accent: PillowColors.green,
-    secondary: PillowColors.lemon,
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
+    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
+    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
+    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
+    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
@@ -55,20 +50,3 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
-
-export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-};
-
-export const BorderRadius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  round: 999,
-};

@@ -1,4 +1,4 @@
-// Fallback for using MaterialIcons on Android and web.
+// Updated with music player icons mapping
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
@@ -14,10 +14,47 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
+  // Navigation icons
   'house.fill': 'home',
   'paperplane.fill': 'send',
-  'chevron.left.forwardslash.chevron.right': 'code',
+  
+  // Music player icons
+  'play.fill': 'play-arrow',
+  'pause.fill': 'pause',
+  'forward.fill': 'fast-forward',
+  'backward.fill': 'fast-rewind',
+  'forward.end.fill': 'skip-next',
+  'backward.end.fill': 'skip-previous',
+  'shuffle': 'shuffle',
+  'repeat': 'repeat',
+  'repeat.1': 'repeat-one',
+  'heart.fill': 'favorite',
+  'heart': 'favorite-border',
+  'plus.circle.fill': 'add-circle',
+  'minus.circle': 'remove-circle',
+  'ellipsis': 'more-horiz',
+  'ellipsis.circle': 'more-vert',
+  'music.note': 'music-note',
+  'music.note.list': 'library-music',
+  'list.bullet': 'playlist-play',
+  'arrow.down.circle': 'file-download',
+  'arrow.up.circle': 'file-upload',
+  'clock': 'access-time',
+  'trash': 'delete',
+  'square.and.arrow.up': 'share',
   'chevron.right': 'chevron-right',
+  'chevron.left': 'chevron-left',
+  'chevron.up': 'chevron-up',
+  'chevron.down': 'chevron-down',
+  'speaker.wave.2': 'volume-up',
+  'speaker.slash': 'volume-off',
+  'headphones': 'headset',
+  'airplayaudio': 'airplay',
+  'dot.radiowaves.left.and.right': 'cast',
+  'magnifyingglass': 'search',
+  'gear': 'settings',
+  'person': 'person',
+  'person.crop.circle': 'account-circle',
 } as IconMapping;
 
 /**
