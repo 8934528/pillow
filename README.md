@@ -49,7 +49,6 @@ Join our community of developers creating universal apps.
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
-
 ## Project Structure
 
 Pillow
@@ -65,9 +64,9 @@ Pillow
 │   │   └── songs.tsx
 │   │
 │   ├── _layout.tsx
-│   ├── index.tsx              (new - redirects to songs)
-│   ├── now-playing.tsx        (moved from explore.tsx)
-│   └── queue.tsx              (renamed from modal.tsx)
+│   ├── index.tsx
+│   ├── now-playing.tsx
+│   └── queue.tsx
 │
 ├── assets/
 ├── components/
@@ -79,7 +78,7 @@ Pillow
 │   ├── external-link.tsx
 │   ├── haptic-tab.tsx
 │   ├── hello-wave.tsx
-│   ├── mini-player.tsx        (new - extracted mini player component)
+│   ├── mini-player.tsx
 │   ├── parallax-scroll-view.tsx
 │   ├── themed-text.tsx
 │   └── themed-view.tsx
