@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 
@@ -6,12 +6,18 @@ import { ThemedView } from './themed-view';
 import { ThemedText } from './themed-text';
 import { IconSymbol } from './ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useCurrentSong } from '@/hooks/use-current-song';
 
 export function MiniPlayer() {
+  const [isPlaying, setIsPlaying] = useState(false);
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
-  const { currentSong, isPlaying, pauseSong, resumeSong, nextSong } = useCurrentSong();
+  
+  // Mock current song
+  const currentSong = {
+    id: 1,
+    title: 'Bohemian Rhapsody',
+    artist: 'Queen',
+  };
 
   if (!currentSong) return null;
 
@@ -39,11 +45,7 @@ export function MiniPlayer() {
               style={styles.controlButton}
               onPress={(e) => {
                 e.stopPropagation();
-                if (isPlaying) {
-                  pauseSong();
-                } else {
-                  resumeSong();
-                }
+                setIsPlaying(!isPlaying);
               }}>
               <IconSymbol 
                 name={isPlaying ? "pause.fill" : "play.fill"} 
@@ -55,7 +57,7 @@ export function MiniPlayer() {
               style={styles.controlButton}
               onPress={(e) => {
                 e.stopPropagation();
-                nextSong();
+                // Next song functionality would go here
               }}>
               <IconSymbol name="forward.end.fill" size={20} color={tintColor} />
             </TouchableOpacity>

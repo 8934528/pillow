@@ -5,10 +5,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useCurrentSong, Song } from '@/hooks/use-current-song';
 
 // Mock favourites data
-const favouriteSongs: Song[] = [
+const favouriteSongs = [
   { id: 1, title: 'Bohemian Rhapsody', artist: 'Queen', album: 'A Night at the Opera', duration: '5:55', year: '1975' },
   { id: 2, title: 'Shape of You', artist: 'Ed Sheeran', album: '÷', duration: '4:23', year: '2017' },
   { id: 3, title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: '3:20', year: '2020' },
@@ -19,10 +18,9 @@ const favouriteSongs: Song[] = [
 export default function FavouritesScreen() {
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
-  const { playSong } = useCurrentSong();
 
-  const handleSongPress = (song: Song) => {
-    playSong(song);
+  const handleSongPress = (song: any) => {
+    // Just navigate for now, no player functionality
     router.push('/now-playing');
   };
 

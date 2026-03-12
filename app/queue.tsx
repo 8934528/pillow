@@ -1,19 +1,37 @@
 import { router } from 'expo-router';
 import { StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useCurrentSong } from '@/hooks/use-current-song';
+
+// Mock queue data
+const mockQueue = [
+  { id: 2, title: 'Shape of You', artist: 'Ed Sheeran', album: '÷', duration: '4:23', year: '2017' },
+  { id: 3, title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: '3:20', year: '2020' },
+  { id: 4, title: 'Dance Monkey', artist: 'Tones and I', album: 'The Kids Are Coming', duration: '3:35', year: '2019' },
+  { id: 5, title: 'Someone Like You', artist: 'Adele', album: '21', duration: '4:45', year: '2011' },
+];
+
+// Mock current song
+const mockCurrentSong = {
+  id: 1,
+  title: 'Bohemian Rhapsody',
+  artist: 'Queen',
+  album: 'A Night at the Opera',
+  duration: '5:55',
+  year: '1975'
+};
 
 export default function QueueScreen() {
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
-  const { currentSong, queue, playSong } = useCurrentSong();
+  const [queue] = useState(mockQueue);
+  const [currentSong] = useState(mockCurrentSong);
 
   const handleSongPress = (song: any) => {
-    playSong(song);
     router.push('/now-playing');
   };
 

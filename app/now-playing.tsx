@@ -15,23 +15,24 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useCurrentSong } from '@/hooks/use-current-song';
 
 const { width } = Dimensions.get('window');
 
 export default function NowPlayingScreen() {
   const [isLiked, setIsLiked] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
-  const { 
-    currentSong, 
-    isPlaying, 
-    pauseSong, 
-    resumeSong, 
-    nextSong, 
-    previousSong,
-    queue 
-  } = useCurrentSong();
+  
+  // Mock current song
+  const currentSong = {
+    id: 1,
+    title: 'Bohemian Rhapsody',
+    artist: 'Queen',
+    album: 'A Night at the Opera',
+    duration: '5:55',
+    year: '1975'
+  };
   
   // Animation for the album art
   const rotation = useSharedValue(0);
@@ -61,11 +62,7 @@ export default function NowPlayingScreen() {
   });
 
   const handlePlayPause = () => {
-    if (isPlaying) {
-      pauseSong();
-    } else {
-      resumeSong();
-    }
+    setIsPlaying(!isPlaying);
     scale.value = withSequence(
       withSpring(0.9),
       withSpring(1)
@@ -75,37 +72,6 @@ export default function NowPlayingScreen() {
   const handleClose = () => {
     router.back();
   };
-
-  if (!currentSong) {
-    return (
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
-            <IconSymbol name="chevron.down" size={24} color={iconColor} />
-          </TouchableOpacity>
-          <ThemedText type="subtitle">Now Playing</ThemedText>
-          <TouchableOpacity>
-            <IconSymbol name="ellipsis" size={24} color={iconColor} />
-          </TouchableOpacity>
-        </ThemedView>
-        <ThemedView style={styles.emptyState}>
-          <IconSymbol name="music.note" size={80} color={iconColor} />
-          <ThemedText style={styles.emptyText}>No song playing</ThemedText>
-          <TouchableOpacity 
-            style={[styles.goBackButton, { borderColor: tintColor }]}
-            onPress={handleClose}>
-            <ThemedText style={{ color: tintColor }}>Go Back</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      </ThemedView>
-    );
-  }
-
-  // Find next song for "Up Next"
-  const currentIndex = queue.findIndex(s => s.id === currentSong.id);
-  const nextSongInQueue = currentIndex >= 0 && currentIndex < queue.length - 1 
-    ? queue[currentIndex + 1] 
-    : queue.length > 0 ? queue[0] : null;
 
   return (
     <ThemedView style={styles.container}>
@@ -136,7 +102,7 @@ export default function NowPlayingScreen() {
         </ThemedText>
         <ThemedText style={styles.songArtist}>{currentSong.artist}</ThemedText>
         <ThemedText style={styles.songAlbum}>
-          {currentSong.album} {currentSong.year ? `• ${currentSong.year}` : ''}
+          {currentSong.album} • {currentSong.year}
         </ThemedText>
       </ThemedView>
 
@@ -156,7 +122,7 @@ export default function NowPlayingScreen() {
         <TouchableOpacity>
           <IconSymbol name="shuffle" size={24} color={iconColor} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={previousSong}>
+        <TouchableOpacity>
           <IconSymbol name="backward.end.fill" size={32} color={iconColor} />
         </TouchableOpacity>
         <TouchableOpacity 
@@ -168,7 +134,7 @@ export default function NowPlayingScreen() {
             color="#FFFFFF" 
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={nextSong}>
+        <TouchableOpacity>
           <IconSymbol name="forward.end.fill" size={32} color={iconColor} />
         </TouchableOpacity>
         <TouchableOpacity>
@@ -197,21 +163,19 @@ export default function NowPlayingScreen() {
       </ThemedView>
 
       {/* Up Next Preview */}
-      {nextSongInQueue && (
-        <TouchableOpacity 
-          style={styles.upNext}
-          onPress={() => router.push('/queue')}>
-          <ThemedView style={styles.upNextContent}>
-            <ThemedView>
-              <ThemedText style={styles.upNextLabel}>Next up</ThemedText>
-              <ThemedText type="defaultSemiBold">
-                {nextSongInQueue.title} - {nextSongInQueue.artist}
-              </ThemedText>
-            </ThemedView>
-            <IconSymbol name="chevron.right" size={20} color={iconColor} />
+      <TouchableOpacity 
+        style={styles.upNext}
+        onPress={() => router.push('/queue')}>
+        <ThemedView style={styles.upNextContent}>
+          <ThemedView>
+            <ThemedText style={styles.upNextLabel}>Next up</ThemedText>
+            <ThemedText type="defaultSemiBold">
+              Shape of You - Ed Sheeran
+            </ThemedText>
           </ThemedView>
-        </TouchableOpacity>
-      )}
+          <IconSymbol name="chevron.right" size={20} color={iconColor} />
+        </ThemedView>
+      </TouchableOpacity>
     </ThemedView>
   );
 }
@@ -320,22 +284,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.6,
     marginBottom: 4,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    opacity: 0.6,
-  },
-  goBackButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    borderRadius: 8,
-    marginTop: 20,
   },
 });

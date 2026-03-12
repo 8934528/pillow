@@ -52,55 +52,58 @@ Join our community of developers creating universal apps.
 ## Project Structure
 
 Pillow
-├── .expo/
-├── .vscode
-├── app/
-│   ├── (tabs)/
-│   │   ├── _layout.tsx
-│   │   ├── albums.tsx
-│   │   ├── artists.tsx
-│   │   ├── favourites.tsx
-│   │   ├── playlists.tsx
-│   │   └── songs.tsx
-│   │
-│   ├── _layout.tsx
-│   ├── index.tsx
-│   ├── now-playing.tsx
-│   └── queue.tsx
-│
-├── assets/
-├── components/
-│   ├── ui/
-│   │   ├── collapsible.tsx
-│   │   ├── icon-symbol.ios.tsx
-│   │   └── icon-symbol.tsx
-│   │
-│   ├── external-link.tsx
-│   ├── haptic-tab.tsx
-│   ├── hello-wave.tsx
-│   ├── mini-player.tsx
-│   ├── parallax-scroll-view.tsx
-│   ├── themed-text.tsx
-│   └── themed-view.tsx
-│
-├── constants/
-│   └── theme.ts
-│
-├── hooks/
-│   ├── use-color-scheme.ts
-│   ├── use-color-scheme.web.ts
-│   ├── use-theme-color.ts
-│   └── use-current-song.ts
-│
-├── node_modules/
-├── scripts/
-│   └── reset-project.js
-│
-├── .gitignore
-├── app.json
-├── eslint.config.js
-├── expo-env.d.ts
-├── LICENSE
-├── package.json
-├── README.md
-└── tsconfig.json
+ ├── .expo/
+ ├── .vscode/
+ ├── app/
+ │   ├── (tabs)/
+ |   |    ├── _layout.tsx
+ |   |    ├── albums.tsx
+ |   |    ├── artists.tsx
+ |   |    ├── favourites.tsx
+ |   |    ├── playlists.tsx
+ |   |    └── songs.tsx
+ |   |
+ │   ├── _layout.tsx
+ │   ├── index.tsx
+ │   ├── modal.tsx
+ │   ├── now-playing.tsx
+ │   └── queue.tsx
+ |
+ ├── assets/
+ ├── components/
+ │   ├── ui/
+ |   |    ├── collapsible.tsx
+ |   |    ├── icon-symbol.ios.tsx
+ |   |    └── icon-symbol.tsx
+ |   |
+ │   ├── external-link.tsx
+ │   ├── haptic-tab.tsx
+ │   ├── hello-wave.tsx
+ │   ├── mini-player.tsx
+ │   ├── parallax-scroll-view.tsx
+ │   ├── themed-text.tsx
+ │   └── themed-view.tsx
+ |
+ ├── constants
+ │   └── theme.ts
+ |
+ ├── hooks
+ │   ├── use-color-scheme.ts
+ │   ├── use-color-scheme.web.ts
+ │   ├── use-current-song.ts
+ │   └── use-theme-color.ts
+ |
+ ├── node_modules/
+ |
+ ├── scripts/
+ │   └── reset-project.js
+ |
+ ├── .gitignore
+ ├── app.json
+ ├── eslint.config.js
+ ├── expo-env.d.ts
+ ├── Makefile
+ ├── package-lock.json
+ ├── package.json
+ ├── README.md
+ └── tsconfig.json
