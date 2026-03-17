@@ -6,7 +6,7 @@
 
 <div align="center">
 
-| Home Screen - Songs Library | Now Playing - Full Player | Favourites | Drive Mode |
+| Songs Library | Now Playing | Favourites | Drive Mode |
 |---------------------------|--------------------------|------------|------------|
 | <img src="assets/1.png" width="100%" /> | <img src="assets/2.png" width="100%" /> | <img src="assets/3.png" width="100%" /> | <img src="assets/4.png" width="100%" /> |
 
