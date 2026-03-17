@@ -102,15 +102,22 @@
 
 ## Project Structure
 
-      Pillow/
-      ├── app/                         # Screens (file-based routing)
-      │   ├── (tabs)/                  # Tab navigation screens
-      │   ├── now-playing.tsx          # Now playing screen
-      │   └── queue.tsx                # Queue management
-      ├── components/                  # Reusable components
-      ├── constants/                   # Theme and constants
-      ├── hooks/                       # Custom React hooks
-      └── assets/                      # Images and assets
+      lib/
+      ├── main.dart                 # Main application entry point
+      ├── models/
+      │   └── song_model.dart       # Song data model and mock data
+      ├── screens/
+      │   ├── songs_page.dart       # Songs library view
+      │   ├── artists_page.dart     # Artists library view
+      │   ├── playlists_page.dart   # Playlists management
+      │   ├── albums_page.dart      # Albums library view
+      │   ├── favourites_page.dart  # Favorites collection
+      │   ├── now_playing.dart      # Full-screen player
+      │   ├── settings.dart         # App settings
+      │   ├── mode.dart             # Playback modes
+      │   └── drive_mode.dart       # Driving mode (placeholder)
+      ├── widgets/                  # Custom widgets (future use)
+      └── utils/                    # Utilities (future use)
 
 ---
 
