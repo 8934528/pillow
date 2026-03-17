@@ -17,17 +17,17 @@ class Song {
 // Mock data
 List<Song> mockSongs = [
   Song(
-    title: 'Bohemian Rhapsody',
-    artist: 'Queen',
-    duration: '5:55',
-    album: 'A Night at the Opera',
+    title: 'Imithandazo',
+    artist: 'Kabza De Small & Mthunzi ft Young Stunna',
+    duration: '5:54',
+    album: 'Isimo',
     isFavorite: false,
   ),
   Song(
-    title: 'Hotel California',
-    artist: 'Eagles',
-    duration: '6:30',
-    album: 'Hotel California',
+    title: 'Lavalwa Ucango',
+    artist: 'Betusile',
+    duration: '3:41',
+    album: 'Imvuselelo',
     isFavorite: false,
   ),
 ];
