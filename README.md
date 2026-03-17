@@ -148,5 +148,3 @@
 ## License
 
 - This project is licensed under the MIT License - see the LICENSE file for details.
-
-      If you want, I can also generate a **downloadable `.md` file** for you directly.
