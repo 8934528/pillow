@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/song_model.dart';
+import 'equalizer_page.dart';
 
 class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({super.key});
@@ -173,11 +174,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: SweepGradient(
-                          colors: [moodColor1, Colors.black, moodColor1],
+                          colors: [moodColor1, moodColor2, moodColor1],
                         ),
                         border: Border.all(color: Colors.white12, width: 8),
                         boxShadow: [
                           BoxShadow(color: moodColor1.withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
+                          BoxShadow(color: moodColor2.withValues(alpha: 0.2), blurRadius: 60, spreadRadius: 5),
                         ],
                       ),
                       child: Center(
@@ -227,12 +229,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.shuffle, color: appState.isShuffleOn ? const Color(0xFFFF0000) : Colors.grey),
+                        icon: Icon(Icons.shuffle, color: appState.isShuffleOn ? moodColor1 : Colors.grey),
                         onPressed: () => appState.toggleShuffle(),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.skip_previous, size: 48, color: Color(0xFFFF0000)),
+                        icon: Icon(Icons.skip_previous, size: 48, color: moodColor1),
                         onPressed: () => appState.prevSong(),
                       ),
                       const SizedBox(width: 16),
@@ -246,7 +248,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       ),
                       const SizedBox(width: 16),
                       IconButton(
-                        icon: const Icon(Icons.skip_next, size: 48, color: Color(0xFFFF0000)),
+                        icon: Icon(Icons.skip_next, size: 48, color: moodColor1),
                         onPressed: () => appState.nextSong(),
                       ),
                       const SizedBox(width: 8),
@@ -275,6 +277,10 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                 IconButton(
                   icon: Icon(Icons.playlist_add, color: moodColor1, size: 32),
                   onPressed: () => _showAddToPlaylistSheet(song),
+                ),
+                IconButton(
+                  icon: Icon(Icons.graphic_eq, color: moodColor1, size: 30),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => const EqualizerPage())),
                 ),
                 IconButton(
                   icon: Icon(Icons.more_vert, color: moodColor1, size: 30),

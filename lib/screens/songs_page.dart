@@ -7,6 +7,7 @@ import 'mode.dart';
 import 'now_playing.dart';
 import 'online_search_page.dart';
 import '../main.dart';
+import '../utils/notification_utils.dart';
 
 class SongsPage extends StatefulWidget {
   const SongsPage({super.key});
@@ -30,16 +31,11 @@ class _SongsPageState extends State<SongsPage>
   }
 
   void _showToast(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor:
-            isError ? const Color(0xFFFF5349) : const Color(0xFFFF0000),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (isError) {
+      NotificationUtils.showErrorToast(context, msg);
+    } else {
+      NotificationUtils.showSuccessToast(context, msg);
+    }
   }
 
   void _playAndNavigate(Song song) {
@@ -146,25 +142,10 @@ class _SongsPageState extends State<SongsPage>
   }
 
   void _showSongInfo(Song song) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(song.title, style: const TextStyle(color: Color(0xFFFF0000))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Artist: ${song.artist}'),
-            Text('Album: ${song.album}'),
-            Text('Duration: ${song.duration}'),
-            const SizedBox(height: 8),
-            const Text('Format: MP3'),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
-        ],
-      ),
+    NotificationUtils.showInfoAlert(
+      context,
+      'Artist: ${song.artist}\nAlbum: ${song.album}\nDuration: ${song.duration}\nFormat: MP3',
+      title: song.title,
     );
   }
 
@@ -328,7 +309,10 @@ class _SongsPageState extends State<SongsPage>
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => appState.scanMusic(),
+        onPressed: () {
+          appState.scanMusic();
+          NotificationUtils.showToast(context, 'Scanning for local music...', icon: Icons.search);
+        },
         backgroundColor: const Color(0xFFFF0000),
         child: const Icon(Icons.library_music, color: Colors.white),
       ),

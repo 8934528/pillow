@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../utils/notification_utils.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -28,7 +29,10 @@ class SettingsPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFFFF0000)),
-            onPressed: () => appState.scanMusic(),
+            onPressed: () {
+              appState.scanMusic();
+              NotificationUtils.showToast(context, 'Rescanning library...', icon: Icons.refresh);
+            },
             tooltip: 'Rescan library',
           ),
         ],
@@ -49,7 +53,10 @@ class SettingsPage extends StatelessWidget {
               cardColor: cardColor,
               isDark: isDark,
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => appState.scanMusic(),
+              onTap: () {
+                appState.scanMusic();
+                NotificationUtils.showToast(context, 'Scanning device for music...', icon: Icons.folder_open);
+              },
             ),
           ),
           SliverToBoxAdapter(
@@ -92,7 +99,10 @@ class SettingsPage extends StatelessWidget {
               isDark: isDark,
               trailing: Switch(
                 value: isDark,
-                onChanged: (v) => appState.setDarkMode(v),
+                onChanged: (v) {
+                  appState.setDarkMode(v);
+                  NotificationUtils.showToast(context, v ? 'Dark mode enabled' : 'Light mode enabled', icon: v ? Icons.dark_mode : Icons.light_mode);
+                },
                 activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
@@ -202,6 +212,7 @@ class SettingsPage extends StatelessWidget {
       onTap: () {
         appState.setAudioQuality(quality);
         Navigator.pop(context);
+        NotificationUtils.showToast(context, 'Audio quality set to $quality', icon: Icons.high_quality);
       },
       trailing: appState.audioQuality == quality ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
     );

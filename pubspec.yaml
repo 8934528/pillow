@@ -20,6 +20,10 @@ dependencies:
   url_launcher: ^6.3.0
   flutter_dotenv: ^5.1.0
   http: ^1.2.2
+  logger: ^2.7.0
+  awesome_dialog: ^3.3.0
+  delightful_toast: ^1.1.0
+  lucide_icons: ^0.257.0
 
 dev_dependencies:
   flutter_test:
