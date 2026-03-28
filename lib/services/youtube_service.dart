@@ -1,8 +1,10 @@
 import 'serp_service.dart';
+import 'package:logger/logger.dart';
 
 class YouTubeService {
+  static final _logger = Logger();
+
   static Future<List<Map<String, String>>> searchVideos(String query) async {
-    print('Searching YouTube via SerpApi for "$query"...');
     
     try {
       final results = await SerpService.search(query, engine: 'youtube');
@@ -17,7 +19,7 @@ class YouTubeService {
         }).toList();
       }
     } catch (e) {
-      print('Error searching YouTube: $e');
+      _logger.e('Error searching YouTube: $e');
     }
     
     return [];

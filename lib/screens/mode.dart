@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../utils/notification_utils.dart';
 import 'drive_mode.dart';
 
 class ModePage extends StatelessWidget {
@@ -46,8 +47,16 @@ class ModePage extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Column(
-                children: [
+              child: RadioGroup<String>(
+                groupValue: selectedMode,
+                onChanged: (v) {
+                  if (v != null) {
+                    context.read<AppState>().setAppMode(v);
+                    NotificationUtils.showSuccessToast(context, 'Mode changed to ${v.capitalize()}');
+                  }
+                },
+                child: Column(
+                  children: [
                   // Offline mode
                   _buildModeOption(
                     context,
@@ -58,10 +67,7 @@ class ModePage extends StatelessWidget {
                     isSelected: selectedMode == 'offline',
                     trailing: Radio<String>(
                       value: 'offline',
-                      groupValue: selectedMode,
                       activeColor: const Color(0xFFFF0000),
-                      onChanged: (v) =>
-                          context.read<AppState>().setAppMode(v!),
                     ),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
@@ -101,13 +107,11 @@ class ModePage extends StatelessWidget {
                     isSelected: selectedMode == 'online',
                     trailing: Radio<String>(
                       value: 'online',
-                      groupValue: selectedMode,
                       activeColor: const Color(0xFFFF5349),
-                      onChanged: (v) =>
-                          context.read<AppState>().setAppMode(v!),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),

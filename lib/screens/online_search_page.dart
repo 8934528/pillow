@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../utils/notification_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OnlineSearchPage extends StatefulWidget {
@@ -19,10 +20,21 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
     super.dispose();
   }
 
-  void _performSearch() {
+  void _performSearch() async {
     final query = _searchController.text.trim();
     if (query.isNotEmpty) {
-      context.read<AppState>().searchOnline(query);
+      try {
+        await context.read<AppState>().searchOnline(query);
+        if (mounted && context.read<AppState>().onlineSearchResults.isEmpty) {
+          NotificationUtils.showInfoAlert(context, 'No results found for "$query".', title: 'Search Results');
+        }
+      } catch (e) {
+        if (mounted) {
+          NotificationUtils.showErrorAlert(context, 'Failed to search online: $e', title: 'Search Error');
+        }
+      }
+    } else {
+      NotificationUtils.showToast(context, 'Please enter a search term', icon: Icons.warning_amber_rounded);
     }
   }
 
@@ -70,7 +82,7 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search YouTube via SerpApi...',
+                  hintText: 'Search YouTube movies...',
                   prefixIcon: const Icon(Icons.search, color: Color(0xFFFF0000)),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.send, color: Color(0xFFFF0000)),
@@ -142,8 +154,17 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
         ),
         onTap: () async {
           final url = item['link'];
-          if (url != null && await canLaunchUrl(Uri.parse(url))) {
-            await launchUrl(Uri.parse(url));
+          if (url != null) {
+            try {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                if (mounted) NotificationUtils.showErrorToast(context, 'Could not launch YouTube link');
+              }
+            } catch (e) {
+              if (mounted) NotificationUtils.showErrorAlert(context, 'Invalid URL: $e', title: 'Navigation Error');
+            }
           }
         },
       ),

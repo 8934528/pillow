@@ -3,6 +3,8 @@ class Song {
   final String artist;
   final String duration;
   final String album;
+  final String? filePath;
+  final bool isOnline;
   bool isFavorite;
 
   Song({
@@ -10,6 +12,8 @@ class Song {
     required this.artist,
     required this.duration,
     required this.album,
+    this.filePath,
+    this.isOnline = false,
     this.isFavorite = false,
   });
 }

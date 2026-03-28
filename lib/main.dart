@@ -8,6 +8,8 @@ import 'screens/albums_page.dart';
 import 'screens/favourites_page.dart';
 import 'screens/now_playing.dart';
 import 'screens/mood_page.dart';
+import 'screens/online_search_page.dart';
+import 'screens/equalizer_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -132,8 +134,15 @@ class _MainMusicPageState extends State<MainMusicPage> {
 
   Widget _buildNavBarItem(int index, IconData icon, String label, bool isDark) {
     final isSelected = _selectedIndex == index;
-    final mood = context.watch<AppState>().currentMood;
-    final activeColor = mood?.gradientColors[0] ?? const Color(0xFFFF0000);
+    final appState = context.watch<AppState>();
+    final mood = appState.currentMood;
+    final isOnline = appState.appMode == 'online';
+    
+    // Mode-specific active colors
+    final offlineColor = const Color(0xFFFF0000); // Red
+    final onlineColor = const Color(0xFF00B4DB);   // Blue/Cyan
+    
+    final activeColor = mood?.gradientColors[0] ?? (isOnline ? onlineColor : offlineColor);
     final inactiveColor = isDark ? Colors.grey[400]! : Colors.grey;
 
     return Expanded(
@@ -155,9 +164,10 @@ class _MainMusicPageState extends State<MainMusicPage> {
                 label,
                 style: TextStyle(
                   color: isSelected ? activeColor : inactiveColor,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -170,14 +180,82 @@ class _MainMusicPageState extends State<MainMusicPage> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = appState.isDarkMode;
+    final isOnline = appState.appMode == 'online';
     final hasSong = appState.currentSong != null;
     final showMiniPlayer = hasSong && (appState.isPlaying || _isMiniPlayerVisible);
+
+    final offlineColor = const Color(0xFFFF0000);
+    final onlineColor = const Color(0xFF00B4DB);
+    final moodColor = appState.currentMood?.gradientColors[0] ?? (isOnline ? onlineColor : offlineColor);
 
     final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
     final navBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
+      appBar: AppBar(
+        title: Text(isOnline ? 'Online Music' : 'Local Library', style: TextStyle(color: moodColor, fontWeight: FontWeight.bold)),
+        backgroundColor: navBgColor,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: moodColor),
+            onPressed: () => appState.toggleDarkMode(),
+          ),
+        ],
+      ),
+      drawer: Drawer(
+        backgroundColor: navBgColor,
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [moodColor, moodColor.withValues(alpha: 0.6)]),
+              ),
+              child: const Center(
+                child: Text('PILLOW MUSIC', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.compare_arrows, color: moodColor),
+              title: Text('Mode: ${isOnline ? "Online" : "Offline"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: Switch(
+                value: isOnline,
+                activeColor: onlineColor,
+                onChanged: (v) {
+                  appState.setAppMode(v ? 'online' : 'offline');
+                  setState(() {
+                    _selectedIndex = 0;
+                  });
+                  if (_pageController.hasClients) {
+                    _pageController.jumpToPage(0);
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.graphic_eq, color: moodColor),
+              title: const Text('Equalizer'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (ctx) => const EqualizerPage()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.settings, color: moodColor),
+              title: const Text('Settings'),
+              onTap: () => Navigator.pop(context),
+            ),
+            const Spacer(),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Version 1.0.0', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        ),
+      ),
       body: Stack(
         children: [
           PageView(
@@ -185,14 +263,20 @@ class _MainMusicPageState extends State<MainMusicPage> {
             onPageChanged: (index) {
               setState(() => _selectedIndex = index);
             },
-            children: const [
-              SongsPage(),
-              ArtistsPage(),
-              PlaylistsPage(),
-              AlbumsPage(),
-              FavouritesPage(),
-              MoodPage(),
-            ],
+            children: isOnline
+                ? const [
+                    OnlineSearchPage(),
+                    MoodPage(),
+                    FavouritesPage(),
+                  ]
+                : const [
+                    SongsPage(),
+                    ArtistsPage(),
+                    PlaylistsPage(),
+                    AlbumsPage(),
+                    FavouritesPage(),
+                    MoodPage(),
+                  ],
           ),
           if (showMiniPlayer)
             AnimatedPositioned(
@@ -205,7 +289,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
                 duration: const Duration(milliseconds: 300),
                 opacity: 1.0,
                 child: MiniPlayer(
-                  key: ValueKey(appState.currentSong!.title),
+                  key: ValueKey(appState.currentSong?.title ?? 'none'),
                   onTap: _navigateToNowPlaying,
                   onVisibilityChanged: (v) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -233,14 +317,20 @@ class _MainMusicPageState extends State<MainMusicPage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
-              children: [
-                _buildNavBarItem(0, Icons.music_note, 'Songs', isDark),
-                _buildNavBarItem(1, Icons.person, 'Artists', isDark),
-                _buildNavBarItem(2, Icons.playlist_play, 'Playlists', isDark),
-                _buildNavBarItem(3, Icons.album, 'Albums', isDark),
-                _buildNavBarItem(4, Icons.favorite, 'Favourites', isDark),
-                _buildNavBarItem(5, Icons.mood, 'Moods', isDark),
-              ],
+              children: isOnline
+                  ? [
+                      _buildNavBarItem(0, Icons.search, 'Search', isDark),
+                      _buildNavBarItem(1, Icons.explore, 'Moods', isDark),
+                      _buildNavBarItem(2, Icons.favorite, 'Favourites', isDark),
+                    ]
+                  : [
+                      _buildNavBarItem(0, Icons.music_note, 'Songs', isDark),
+                      _buildNavBarItem(1, Icons.person, 'Artists', isDark),
+                      _buildNavBarItem(2, Icons.playlist_play, 'Playlists', isDark),
+                      _buildNavBarItem(3, Icons.album, 'Albums', isDark),
+                      _buildNavBarItem(4, Icons.favorite, 'Favourites', isDark),
+                      _buildNavBarItem(5, Icons.mood, 'Moods', isDark),
+                    ],
             ),
           ),
         ),
