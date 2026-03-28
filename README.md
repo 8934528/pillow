@@ -62,9 +62,9 @@
 
 ### Special Features
 
-- Driving Mode: Simplified interface for safe driving (coming soon)  
-- Offline Mode: Play downloaded music only (coming soon)  
-- Online Mode: Stream music from the internet (coming soon)  
+- **Driving Mode:** Simplified interface for safe driving 
+- **Offline Mode:** Play downloaded music only  
+- **Online Search:** Search and explore music videos on YouTube via SerpApi (New!)
 
 ---
 
@@ -72,7 +72,8 @@
 
 - **Framework:** Flutter  
 - **Language:** Dart  
-- **State Management:** Flutter's built-in state management with StatefulWidget  
+- **State Management:** Provider  
+- **APIs:** SerpApi (for YouTube Search)  
 - **Animations:** Flutter's animation controllers and implicit animations  
 - **Navigation:** Custom page routes with slide transitions  
 
@@ -100,7 +101,11 @@
 
             flutter pub get
 
-3. Run the app
+3. Configure Environment
+    - Create a `.env` file in the root directory
+    - Add your SerpApi key: `SERP_API_KEY=your_api_key_here`
+
+4. Run the app
 
             flutter run
 
@@ -119,11 +124,15 @@
       │   ├── albums_page.dart      # Albums library view
       │   ├── favourites_page.dart  # Favorites collection
       │   ├── now_playing.dart      # Full-screen player
+      │   ├── online_search_page.dart # Online YouTube search (SerpApi)
       │   ├── settings.dart         # App settings
       │   ├── mode.dart             # Playback modes
       │   └── drive_mode.dart       # Driving mode (placeholder)
-      ├── widgets/                  # Custom widgets (future use)
-      └── utils/                    # Utilities (future use)
+      ├── services/                 # API & External Services
+      │   ├── serp_service.dart     # SerpApi wrapper
+      │   └── youtube_service.dart  # YouTube search implementation
+      ├── widgets/                  # Custom widgets
+      └── utils/                    # Utilities
 
 ---
 
