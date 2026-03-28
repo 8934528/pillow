@@ -76,7 +76,7 @@ class SettingsPage extends StatelessWidget {
               trailing: Switch(
                 value: appState.equalizerEnabled,
                 onChanged: (v) => appState.setEqualizer(v),
-                activeColor: const Color(0xFFFF0000),
+                activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
           ),
@@ -93,7 +93,7 @@ class SettingsPage extends StatelessWidget {
               trailing: Switch(
                 value: isDark,
                 onChanged: (v) => appState.setDarkMode(v),
-                activeColor: const Color(0xFFFF0000),
+                activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
           ),
