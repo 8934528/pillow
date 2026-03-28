@@ -5,6 +5,7 @@ import '../models/song_model.dart';
 import 'settings.dart';
 import 'mode.dart';
 import 'now_playing.dart';
+import 'online_search_page.dart';
 import '../main.dart';
 
 class SongsPage extends StatefulWidget {
@@ -16,11 +17,14 @@ class SongsPage extends StatefulWidget {
 
 class _SongsPageState extends State<SongsPage>
     with SingleTickerProviderStateMixin {
-  String _sortOption = 'time';
+  String _sortOption = 'song';
+  bool _isSearchOpen = false;
+  final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -32,31 +36,39 @@ class _SongsPageState extends State<SongsPage>
         backgroundColor:
             isError ? const Color(0xFFFF5349) : const Color(0xFFFF0000),
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  void _showFeatureComingSoon() => _showToast('Feature coming soon!', isError: true);
-
   void _playAndNavigate(Song song) {
     context.read<AppState>().playSong(song);
     Navigator.push(
       context,
-      SlideUpPageRoute(builder: (_) => const NowPlayingPage()),
+      SlideUpPageRoute(builder: (context) => const NowPlayingPage()),
     );
   }
 
-  List<Song> _sortedSongs(List<Song> songs) {
-    final list = [...songs];
+  List<Song> _filteredAndSortedSongs(List<Song> songs) {
+    var list = [...songs];
+    
+    // Search filter
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      list = list.where((s) => 
+        s.title.toLowerCase().contains(query) || 
+        s.artist.toLowerCase().contains(query)
+      ).toList();
+    }
+
+    // Sorting
     switch (_sortOption) {
       case 'song':
-        list.sort((a, b) => a.title.compareTo(b.title));
+        list.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
         break;
       case 'artist':
-        list.sort((a, b) => a.artist.compareTo(b.artist));
+        list.sort((a, b) => a.artist.toLowerCase().compareTo(b.artist.toLowerCase()));
         break;
       default:
         break;
@@ -76,8 +88,7 @@ class _SongsPageState extends State<SongsPage>
         return Container(
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(25)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -101,38 +112,29 @@ class _SongsPageState extends State<SongsPage>
                 ),
               ),
               const Divider(height: 1, thickness: 1, indent: 20, endIndent: 20),
-              StatefulBuilder(builder: (ctx, setLocal) {
-                return _buildModalOption(
-                  icon: song.isFavorite
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  title: song.isFavorite
-                      ? 'Remove from favourites'
-                      : 'Add to favourites',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    appState.toggleFavorite(song);
-                    _showToast(song.isFavorite
-                        ? 'Added to favourites'
-                        : 'Removed from favourites');
-                  },
-                );
-              }),
-              _buildModalOption(
-                icon: Icons.playlist_add,
-                title: 'Add to playlist',
+              ListTile(
+                leading: _buildIconBox(song.isFavorite ? Icons.favorite : Icons.favorite_border),
+                title: Text(song.isFavorite ? 'Remove from favorites' : 'Add to favorites'),
+                onTap: () {
+                  appState.toggleFavorite(song);
+                  Navigator.pop(ctx);
+                  _showToast(song.isFavorite ? 'Added to favorites' : 'Removed from favorites');
+                },
+              ),
+              ListTile(
+                leading: _buildIconBox(Icons.playlist_add),
+                title: const Text('Add to playlist'),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showAddToPlaylistSheet(song);
                 },
               ),
-              _buildModalOption(
-                icon: Icons.delete,
-                title: 'Delete',
-                isDestructive: true,
+              ListTile(
+                leading: _buildIconBox(Icons.info_outline),
+                title: const Text('Song info'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _showFeatureComingSoon();
+                  _showSongInfo(song);
                 },
               ),
               const SizedBox(height: 20),
@@ -143,19 +145,40 @@ class _SongsPageState extends State<SongsPage>
     );
   }
 
+  void _showSongInfo(Song song) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(song.title, style: const TextStyle(color: Color(0xFFFF0000))),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Artist: ${song.artist}'),
+            Text('Album: ${song.album}'),
+            Text('Duration: ${song.duration}'),
+            const SizedBox(height: 8),
+            const Text('Format: MP3'),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   void _showAddToPlaylistSheet(Song song) {
     final appState = context.read<AppState>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final isDark = appState.isDarkMode;
-        final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+        final cardColor = appState.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
         return Container(
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(25)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -170,25 +193,40 @@ class _SongsPageState extends State<SongsPage>
                         color: Color(0xFFFF0000))),
               ),
               if (appState.playlists.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('No playlists yet. Create one first.'),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const Text('No playlists yet.'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          // Navigate to playlists or show create dialog
+                        },
+                        child: const Text('Create Playlist'),
+                      ),
+                    ],
+                  ),
                 )
               else
-                ...List.generate(appState.playlists.length, (i) {
-                  final pl = appState.playlists[i];
-                  return ListTile(
-                    leading: const Icon(Icons.playlist_play,
-                        color: Color(0xFFFF0000)),
-                    title: Text(pl.name),
-                    subtitle: Text('${pl.songCount} songs'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      appState.addSongToPlaylist(i, song);
-                      _showToast('Added to ${pl.name}');
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: appState.playlists.length,
+                    itemBuilder: (ctx, i) {
+                      final pl = appState.playlists[i];
+                      return ListTile(
+                        leading: const Icon(Icons.playlist_play, color: Color(0xFFFF0000)),
+                        title: Text(pl.name),
+                        onTap: () {
+                          appState.addSongToPlaylist(i, song);
+                          Navigator.pop(ctx);
+                          _showToast('Added to ${pl.name}');
+                        },
+                      );
                     },
-                  );
-                }),
+                  ),
+                ),
               const SizedBox(height: 20),
             ],
           ),
@@ -197,362 +235,168 @@ class _SongsPageState extends State<SongsPage>
     );
   }
 
-  void _showSortModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModal) {
-            final appState = context.read<AppState>();
-            final isDark = appState.isDarkMode;
-            final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-            return Container(
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(25)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildSheetHandle(),
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text('Sort by',
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFFF0000))),
-                  ),
-                  const Divider(height: 1),
-                  _buildSortOption('time', 'Time added', Icons.access_time,
-                      _sortOption, (v) => setModal(() => _sortOption = v)),
-                  _buildSortOption('song', 'Song name', Icons.music_note,
-                      _sortOption, (v) => setModal(() => _sortOption = v)),
-                  _buildSortOption('artist', 'Artist', Icons.person,
-                      _sortOption, (v) => setModal(() => _sortOption = v)),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.grey[700],
-                              side: BorderSide(color: Colors.grey[300]!),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              setState(() {});
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF0000),
-                              foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text('Confirm'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSortOption(
-    String value,
-    String title,
-    IconData icon,
-    String groupValue,
-    Function(String) onChanged,
-  ) {
-    return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: const Color(0xFFFF0000), size: 20),
-      ),
-      title: Text(title,
-          style:
-              const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-      trailing: Radio<String>(
-        value: value,
-        groupValue: groupValue,
-        activeColor: const Color(0xFFFF0000),
-        onChanged: (val) => onChanged(val!),
-      ),
-      onTap: () => onChanged(value),
-    );
-  }
-
-  Widget _buildSheetHandle() {
-    return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 8),
-      width: 40,
-      height: 4,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
-  Widget _buildSheetArt(IconData icon) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          colors: [
-            const Color(0xFFFF0000).withValues(alpha: 0.2),
-            const Color(0xFFFF0000).withValues(alpha: 0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Icon(icon, color: Colors.white, size: 30),
-    );
-  }
-
-  Widget _buildModalOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isDestructive
-              ? const Color(0xFFFF5349).withValues(alpha: 0.1)
-              : const Color(0xFFFF0000).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color:
-              isDestructive ? const Color(0xFFFF5349) : const Color(0xFFFF0000),
-          size: 22,
-        ),
-      ),
-      title: Text(title,
-          style: TextStyle(
-              color: isDestructive
-                  ? const Color(0xFFFF5349)
-                  : null,
-              fontWeight: FontWeight.w500)),
-      onTap: onTap,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = appState.isDarkMode;
-    final songs = _sortedSongs(appState.songs);
-    final bgColor =
-        isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
+    final songs = _filteredAndSortedSongs(appState.songs);
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text(
-          'All Songs',
-          style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFFF0000),
-              fontSize: 22),
-        ),
+        title: _isSearchOpen
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search songs, artists...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.grey),
+                ),
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                onChanged: (_) => setState(() {}),
+              )
+            : Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset('assets/pillow.png', height: 32, width: 32, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Pillow Music',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF0000)),
+                  ),
+                ],
+              ),
         backgroundColor: cardColor,
         elevation: 0,
-        centerTitle: false,
-        iconTheme: const IconThemeData(color: Color(0xFFFF0000)),
         actions: [
-          _appBarAction(Icons.search, _showFeatureComingSoon),
+          IconButton(
+            icon: Icon(_isSearchOpen ? Icons.close : Icons.search, color: const Color(0xFFFF0000)),
+            onPressed: () {
+              setState(() {
+                if (_isSearchOpen) _searchController.clear();
+                _isSearchOpen = !_isSearchOpen;
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.public, color: Color(0xFFFF0000)),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const OnlineSearchPage()));
+            },
+          ),
           _appBarMenuButton(context),
         ],
       ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            sliver: SliverToBoxAdapter(
-              child: _buildPlayAllCard(songs, cardColor, textPrimary),
-            ),
-          ),
-          if (songs.isEmpty)
-            SliverFillRemaining(child: _buildEmptyState())
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _buildSongTile(songs[index], cardColor, textPrimary),
-                  childCount: songs.length,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverToBoxAdapter(
+                  child: _buildHeader(songs, cardColor, isDark),
                 ),
+              ),
+              if (songs.isEmpty && !appState.isScanning)
+                SliverFillRemaining(child: _buildEmptyState())
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildSongTile(songs[index], cardColor, isDark),
+                      childCount: songs.length,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (appState.isScanning)
+            const Positioned(
+              top: 0, left: 0, right: 0,
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF0000)),
               ),
             ),
         ],
       ),
-    );
-  }
-
-  Widget _appBarAction(IconData icon, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: IconButton(icon: Icon(icon), onPressed: onTap),
-    );
-  }
-
-  Widget _appBarMenuButton(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, size: 22),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        onSelected: (value) {
-          if (value == 'settings') {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()));
-          } else if (value == 'mode') {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const ModePage()));
-          } else {
-            _showFeatureComingSoon();
-          }
-        },
-        itemBuilder: (_) => [
-          _popupItem('settings', Icons.settings, 'Settings',
-              const Color(0xFFFF0000)),
-          _popupItem('mode', Icons.mode, 'Mode', const Color(0xFFFF0000)),
-          _popupItem('delete', Icons.delete, 'Delete',
-              const Color(0xFFFF5349)),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => appState.scanMusic(),
+        backgroundColor: const Color(0xFFFF0000),
+        child: const Icon(Icons.library_music, color: Colors.white),
       ),
     );
   }
 
-  PopupMenuItem<String> _popupItem(
-      String value, IconData icon, String title, Color color) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 12),
-        Text(title),
-      ]),
-    );
-  }
-
-  Widget _buildPlayAllCard(
-      List<Song> songs, Color cardColor, Color textColor) {
+  Widget _buildHeader(List<Song> songs, Color cardColor, bool isDark) {
     return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+      ),
+      child: Row(
+        children: [
+          ElevatedButton.icon(
+            onPressed: () {
+              if (songs.isNotEmpty) _playAndNavigate(songs[0]);
+            },
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Play All'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF0000),
+              foregroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('${songs.length} Songs', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.sort, color: Color(0xFFFF0000)),
+            onPressed: _showSortModal,
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.play_arrow,
-                    color: Color(0xFFFF0000)),
-                onPressed: () {
-                  if (songs.isNotEmpty) _playAndNavigate(songs[0]);
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text('Play all',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: textColor)),
-            const SizedBox(width: 8),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${songs.length}',
-                style: const TextStyle(
-                    color: Color(0xFFFF0000),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13),
-              ),
-            ),
-            const Spacer(),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.sort,
-                    color: Color(0xFFFF0000), size: 22),
-                onPressed: _showSortModal,
-              ),
-            ),
-          ],
+    );
+  }
+
+  Widget _buildSongTile(Song song, Color cardColor, bool isDark) {
+    final currentSong = context.watch<AppState>().currentSong;
+    final isCurrent = currentSong?.title == song.title;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isCurrent ? const Color(0xFFFF0000).withValues(alpha: 0.1) : cardColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF0000).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.music_note, color: Color(0xFFFF0000)),
         ),
+        title: Text(
+          song.title,
+          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(song.artist, style: const TextStyle(fontSize: 12)),
+        trailing: IconButton(
+          icon: const Icon(Icons.more_vert),
+          onPressed: () => _showSongOptionsModal(song),
+        ),
+        onTap: () => _playAndNavigate(song),
       ),
     );
   }
@@ -562,108 +406,86 @@ class _SongsPageState extends State<SongsPage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.music_note,
-              size: 60,
-              color: const Color(0xFFFF0000).withValues(alpha: 0.5),
-            ),
+          const Icon(Icons.music_off, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text('No songs found'),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => context.read<AppState>().scanMusic(),
+            child: const Text('Scan Local Storage'),
           ),
-          const SizedBox(height: 24),
-          const Text('No songs detected',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54)),
-          const SizedBox(height: 12),
-          Text('Add some music to your library',
-              style: TextStyle(fontSize: 15, color: Colors.grey[600])),
         ],
       ),
     );
   }
 
-  Widget _buildSongTile(Song song, Color cardColor, Color textPrimary) {
-    final isCurrent =
-        context.watch<AppState>().currentSong?.title == song.title;
+  Widget _appBarMenuButton(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Color(0xFFFF0000)),
+      onSelected: (val) {
+        if (val == 'settings') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+        } else if (val == 'mode') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ModePage()));
+        }
+      },
+      itemBuilder: (ctx) => [
+        const PopupMenuItem(value: 'settings', child: Text('Settings')),
+        const PopupMenuItem(value: 'mode', child: Text('Mode')),
+      ],
+    );
+  }
+
+  Widget _buildIconBox(IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isCurrent
-            ? const Color(0xFFFF0000).withValues(alpha: 0.08)
-            : cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: isCurrent
-            ? Border.all(color: const Color(0xFFFF0000).withValues(alpha: 0.4))
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
-            blurRadius: 5,
-            spreadRadius: 1,
-          ),
-        ],
+        color: const Color(0xFFFF0000).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              colors: [
-                const Color(0xFFFF0000).withValues(alpha: 0.2),
-                const Color(0xFFFF0000).withValues(alpha: 0.8),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
+      child: Icon(icon, color: const Color(0xFFFF0000), size: 20),
+    );
+  }
+
+  Widget _buildSheetHandle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      width: 40, height: 4,
+      decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)),
+    );
+  }
+
+  Widget _buildSheetArt(IconData icon) {
+    return Container(
+      width: 60, height: 60,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF0000).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Icon(icon, color: const Color(0xFFFF0000), size: 30),
+    );
+  }
+
+  void _showSortModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.title),
+            title: const Text('Sort by Title'),
+            onTap: () { setState(() => _sortOption = 'song'); Navigator.pop(ctx); },
+            trailing: _sortOption == 'song' ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
           ),
-          child: const Icon(Icons.music_note, color: Colors.white, size: 24),
-        ),
-        title: Text(song.title,
-            style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: textPrimary)),
-        subtitle: Text(song.artist,
-            style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(song.duration,
-                  style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-            ),
-            const SizedBox(width: 4),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF0000).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.more_vert,
-                    color: Color(0xFFFF0000), size: 20),
-                onPressed: () => _showSongOptionsModal(song),
-              ),
-            ),
-          ],
-        ),
-        onTap: () => _playAndNavigate(song),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Sort by Artist'),
+            onTap: () { setState(() => _sortOption = 'artist'); Navigator.pop(ctx); },
+            trailing: _sortOption == 'artist' ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

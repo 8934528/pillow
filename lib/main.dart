@@ -8,8 +8,12 @@ import 'screens/playlists_page.dart';
 import 'screens/albums_page.dart';
 import 'screens/favourites_page.dart';
 import 'screens/now_playing.dart';
+import 'screens/mood_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -66,27 +70,18 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Custom page route for slide up animation
 class SlideUpPageRoute<T> extends PageRouteBuilder<T> {
   final WidgetBuilder builder;
-
   SlideUpPageRoute({required this.builder})
       : super(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              builder(context),
+          pageBuilder: (context, animation, secondaryAnimation) => builder(context),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0);
             const end = Offset.zero;
             const curve = Curves.easeInOut;
-
-            final tween =
-                Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
             final offsetAnimation = animation.drive(tween);
-
-            return SlideTransition(
-              position: offsetAnimation,
-              child: child,
-            );
+            return SlideTransition(position: offsetAnimation, child: child);
           },
           transitionDuration: const Duration(milliseconds: 300),
         );
@@ -131,25 +126,15 @@ class _MainMusicPageState extends State<MainMusicPage> {
     if (appState.currentSong != null) {
       Navigator.push(
         context,
-        SlideUpPageRoute(
-          builder: (context) => const NowPlayingPage(),
-        ),
-      ).then((_) {
-        if (appState.isPlaying) {
-          setState(() => _isMiniPlayerVisible = true);
-        }
-      });
+        SlideUpPageRoute(builder: (context) => const NowPlayingPage()),
+      );
     }
   }
 
-  Widget _buildNavBarItem(
-    int index,
-    IconData icon,
-    String label,
-    bool isDark,
-  ) {
+  Widget _buildNavBarItem(int index, IconData icon, String label, bool isDark) {
     final isSelected = _selectedIndex == index;
-    final activeColor = const Color(0xFFFF0000);
+    final mood = context.watch<AppState>().currentMood;
+    final activeColor = mood?.gradientColors[0] ?? const Color(0xFFFF0000);
     final inactiveColor = isDark ? Colors.grey[400]! : Colors.grey;
 
     return Expanded(
@@ -158,42 +143,13 @@ class _MainMusicPageState extends State<MainMusicPage> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            border: Border(
-              right: index < 4
-                  ? BorderSide(
-                      color: (isDark ? Colors.white : Colors.black)
-                          .withValues(alpha: 0.08),
-                      width: 1,
-                    )
-                  : BorderSide.none,
-            ),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    icon,
-                    color: isSelected ? activeColor : inactiveColor,
-                    size: 24,
-                  ),
-                  if (isSelected)
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF0000),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
+              Icon(
+                icon,
+                color: isSelected ? activeColor : inactiveColor,
+                size: 24,
               ),
               const SizedBox(height: 4),
               Text(
@@ -201,8 +157,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
                 style: TextStyle(
                   color: isSelected ? activeColor : inactiveColor,
                   fontSize: 11,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ],
@@ -217,11 +172,9 @@ class _MainMusicPageState extends State<MainMusicPage> {
     final appState = context.watch<AppState>();
     final isDark = appState.isDarkMode;
     final hasSong = appState.currentSong != null;
-    final showMiniPlayer =
-        hasSong && (appState.isPlaying || _isMiniPlayerVisible);
+    final showMiniPlayer = hasSong && (appState.isPlaying || _isMiniPlayerVisible);
 
-    final bgColor =
-        isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
     final navBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Scaffold(
@@ -239,29 +192,27 @@ class _MainMusicPageState extends State<MainMusicPage> {
               PlaylistsPage(),
               AlbumsPage(),
               FavouritesPage(),
+              MoodPage(),
             ],
           ),
-
-          // Mini Player
           if (showMiniPlayer)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              bottom: 8,
-              left: 0,
-              right: 0,
+              bottom: 12,
+              left: 12,
+              right: 12,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
-                opacity: showMiniPlayer ? 1.0 : 0.0,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: MiniPlayer(
-                    key: ValueKey(appState.currentSong!.title),
-                    onTap: _navigateToNowPlaying,
-                    onVisibilityChanged: (v) {
-                      setState(() => _isMiniPlayerVisible = v);
-                    },
-                  ),
+                opacity: 1.0,
+                child: MiniPlayer(
+                  key: ValueKey(appState.currentSong!.title),
+                  onTap: _navigateToNowPlaying,
+                  onVisibilityChanged: (v) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _isMiniPlayerVisible = v);
+                    });
+                  },
                 ),
               ),
             ),
@@ -270,13 +221,11 @@ class _MainMusicPageState extends State<MainMusicPage> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: navBgColor,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(10)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
-              spreadRadius: 2,
               offset: const Offset(0, -2),
             ),
           ],
@@ -288,10 +237,10 @@ class _MainMusicPageState extends State<MainMusicPage> {
               children: [
                 _buildNavBarItem(0, Icons.music_note, 'Songs', isDark),
                 _buildNavBarItem(1, Icons.person, 'Artists', isDark),
-                _buildNavBarItem(
-                    2, Icons.playlist_play, 'Playlists', isDark),
+                _buildNavBarItem(2, Icons.playlist_play, 'Playlists', isDark),
                 _buildNavBarItem(3, Icons.album, 'Albums', isDark),
                 _buildNavBarItem(4, Icons.favorite, 'Favourites', isDark),
+                _buildNavBarItem(5, Icons.mood, 'Moods', isDark),
               ],
             ),
           ),
@@ -301,9 +250,6 @@ class _MainMusicPageState extends State<MainMusicPage> {
   }
 }
 
-// ─────────────────────────────────────────────
-// Mini Player
-// ─────────────────────────────────────────────
 class MiniPlayer extends StatefulWidget {
   final VoidCallback onTap;
   final Function(bool) onVisibilityChanged;
@@ -318,8 +264,7 @@ class MiniPlayer extends StatefulWidget {
   State<MiniPlayer> createState() => _MiniPlayerState();
 }
 
-class _MiniPlayerState extends State<MiniPlayer>
-    with TickerProviderStateMixin {
+class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
   late AnimationController _timerController;
   late Animation<double> _timerAnimation;
   bool _isTimerRunning = false;
@@ -327,28 +272,28 @@ class _MiniPlayerState extends State<MiniPlayer>
   @override
   void initState() {
     super.initState();
-
     _timerController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
     );
-
     _timerAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _timerController, curve: Curves.linear),
     );
-
     _timerController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         final appState = context.read<AppState>();
         if (mounted && !appState.isPlaying) {
-          widget.onVisibilityChanged(false);
-          _isTimerRunning = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.onVisibilityChanged(false);
+          });
+          setState(() => _isTimerRunning = false);
         }
       }
     });
-
     final appState = context.read<AppState>();
-    if (!appState.isPlaying) _startTimer();
+    if (!appState.isPlaying && appState.currentSong != null) {
+      _startTimer();
+    }
   }
 
   @override
@@ -357,7 +302,9 @@ class _MiniPlayerState extends State<MiniPlayer>
     final appState = context.read<AppState>();
     if (appState.isPlaying) {
       _stopTimer();
-      widget.onVisibilityChanged(true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onVisibilityChanged(true);
+      });
     } else {
       _startTimer();
     }
@@ -371,7 +318,9 @@ class _MiniPlayerState extends State<MiniPlayer>
 
   void _startTimer() {
     _timerController.reset();
-    widget.onVisibilityChanged(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onVisibilityChanged(true);
+    });
     _timerController.forward();
     if (mounted) setState(() => _isTimerRunning = true);
   }
@@ -389,148 +338,107 @@ class _MiniPlayerState extends State<MiniPlayer>
     final isPlaying = appState.isPlaying;
     final isDark = appState.isDarkMode;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF2A2A2A).withValues(alpha: 0.95)
-              : const Color(0xFF8E8E8E).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: (isDark ? Colors.white : Colors.black)
-                .withValues(alpha: 0.15),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 12,
-              spreadRadius: 2,
+    final mood = appState.currentMood;
+    final moodColor = mood?.gradientColors[0] ?? const Color(0xFFFF0000);
+
+    return Material(
+      color: Colors.transparent,
+      elevation: 8,
+      borderRadius: BorderRadius.circular(20),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+              width: 1,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: (isDark ? Colors.black : Colors.black)
-                  .withValues(alpha: 0.1),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isTimerRunning)
-                    AnimatedBuilder(
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isTimerRunning)
+                  Container(
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: AnimatedBuilder(
                       animation: _timerAnimation,
                       builder: (context, child) {
-                        return Container(
-                          height: 2,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: LinearProgressIndicator(
-                            value: _timerAnimation.value,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.2),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              const Color(0xFFFF0000).withValues(alpha: 0.8),
-                            ),
-                          ),
+                        return LinearProgressIndicator(
+                          value: _timerAnimation.value,
+                          backgroundColor: moodColor.withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(moodColor),
                         );
                       },
                     ),
-                  Row(
-                    children: [
-                      // Album art
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            colors: [
-                              const Color(0xFFFF0000).withValues(alpha: 0.2),
-                              const Color(0xFFFF0000).withValues(alpha: 0.9),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(10),
+                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [moodColor, moodColor.withValues(alpha: 0.8)],
                         ),
-                        child: const Icon(
-                          Icons.music_note,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 12),
-                      // Song info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              song.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              song.artist,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset('assets/pillow.png', height: 44, width: 44, fit: BoxFit.cover),
                       ),
-                      // Controls
-                      Row(
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          GestureDetector(
-                            onTap: () => appState.togglePlayPause(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF0000)
-                                    .withValues(alpha: 0.85),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                          Text(
+                            song.title,
+                            style: TextStyle(
+                              color: moodColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => appState.nextSong(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.skip_next,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                          const SizedBox(height: 2),
+                          Text(
+                            song.artist,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black54,
+                              fontSize: 12,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () => appState.togglePlayPause(),
+                          icon: Icon(
+                            isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                            color: moodColor,
+                            size: 32,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => appState.nextSong(),
+                          icon: Icon(Icons.skip_next, color: moodColor, size: 28),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
