@@ -274,7 +274,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                 ),
-                if (trailing != null) trailing,
+                ?trailing,
               ],
             ),
           ),
@@ -588,7 +588,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     _showFeatureComingSoon();
                   }
                 },
-                activeColor: const Color(0xFFFF0000),
+                activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
           ),
@@ -609,7 +609,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     _notificationsEnabled = value;
                   });
                 },
-                activeColor: const Color(0xFFFF0000),
+                activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
           ),
@@ -629,7 +629,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     _showFeatureComingSoon();
                   }
                 },
-                activeColor: const Color(0xFFFF0000),
+                activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
           ),
@@ -646,7 +646,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   });
                   _showFeatureComingSoon();
                 },
-                activeColor: const Color(0xFFFF0000),
+                activeThumbColor: const Color(0xFFFF0000),
               ),
             ),
           ),

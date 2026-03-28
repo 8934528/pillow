@@ -6,7 +6,6 @@ import 'screens/playlists_page.dart';
 import 'screens/albums_page.dart';
 import 'screens/favourites_page.dart';
 import 'screens/now_playing.dart';
-import 'screens/drive_mode.dart';
 import 'models/song_model.dart';
 
 void main() {

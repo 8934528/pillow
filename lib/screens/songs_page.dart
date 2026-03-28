@@ -15,7 +15,7 @@ class SongsPage extends StatefulWidget {
 
 class _SongsPageState extends State<SongsPage> with SingleTickerProviderStateMixin {
   String _sortOption = "time";
-  List<Song> _songs = [...mockSongs];
+  final List<Song> _songs = [...mockSongs];
   late AnimationController _refreshController;
   final ScrollController _scrollController = ScrollController();
 
