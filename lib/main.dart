@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:provider/provider.dart';
+import 'providers/app_state.dart';
 import 'screens/songs_page.dart';
 import 'screens/artists_page.dart';
 import 'screens/playlists_page.dart';
 import 'screens/albums_page.dart';
 import 'screens/favourites_page.dart';
 import 'screens/now_playing.dart';
-import 'models/song_model.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -17,21 +23,45 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<AppState>().isDarkMode;
+
     return MaterialApp(
       title: 'Pillow Music Player',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF0000),
-          primary: const Color(0xFFFF0000),
-          secondary: const Color(0xFFFFA500),
-          tertiary: const Color(0xFFFF5349),
-          surface: const Color(0xFFD3D3D3),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFD3D3D3),
-        useMaterial3: true,
-      ),
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      theme: _buildLightTheme(),
+      darkTheme: _buildDarkTheme(),
       home: const MainMusicPage(),
+    );
+  }
+
+  ThemeData _buildLightTheme() {
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFFFF0000),
+        primary: const Color(0xFFFF0000),
+        secondary: const Color(0xFFFFA500),
+        tertiary: const Color(0xFFFF5349),
+        surface: const Color(0xFFD3D3D3),
+      ),
+      scaffoldBackgroundColor: const Color(0xFFD3D3D3),
+      useMaterial3: true,
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData(
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        brightness: Brightness.dark,
+        seedColor: const Color(0xFFFF0000),
+        primary: const Color(0xFFFF0000),
+        secondary: const Color(0xFFFFA500),
+        tertiary: const Color(0xFFFF5349),
+        surface: const Color(0xFF1A1A1A),
+      ),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      useMaterial3: true,
     );
   }
 }
@@ -39,18 +69,20 @@ class MyApp extends StatelessWidget {
 // Custom page route for slide up animation
 class SlideUpPageRoute<T> extends PageRouteBuilder<T> {
   final WidgetBuilder builder;
-  
+
   SlideUpPageRoute({required this.builder})
       : super(
-          pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              builder(context),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             const begin = Offset(0.0, 1.0);
             const end = Offset.zero;
             const curve = Curves.easeInOut;
-            
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            var offsetAnimation = animation.drive(tween);
-            
+
+            final tween =
+                Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            final offsetAnimation = animation.drive(tween);
+
             return SlideTransition(
               position: offsetAnimation,
               child: child,
@@ -70,21 +102,12 @@ class MainMusicPage extends StatefulWidget {
 class _MainMusicPageState extends State<MainMusicPage> {
   int _selectedIndex = 0;
   late final PageController _pageController;
-  
-  // Mini player visibility state
   bool _isMiniPlayerVisible = true;
-  
-  // Current playing song (for mini player and now playing)
-  Song? _currentSong;
-  bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
-    
-    // Set default current song
-    _currentSong = mockSongs[0];
   }
 
   @override
@@ -95,11 +118,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
 
   void _onItemTapped(int index) {
     if (_selectedIndex == index) return;
-    
-    setState(() {
-      _selectedIndex = index;
-    });
-    
+    setState(() => _selectedIndex = index);
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
@@ -107,53 +126,32 @@ class _MainMusicPageState extends State<MainMusicPage> {
     );
   }
 
-  void _updateMiniPlayerVisibility(bool isVisible) {
-    if (_isMiniPlayerVisible != isVisible) {
-      setState(() {
-        _isMiniPlayerVisible = isVisible;
-      });
-    }
-  }
-
-  void _updatePlaybackState(bool isPlaying, {Song? song}) {
-    setState(() {
-      _isPlaying = isPlaying;
-      if (song != null) {
-        _currentSong = song;
-      }
-      if (isPlaying) {
-        _isMiniPlayerVisible = true;
-      }
-    });
-  }
-
   void _navigateToNowPlaying() {
-    if (_currentSong != null) {
+    final appState = context.read<AppState>();
+    if (appState.currentSong != null) {
       Navigator.push(
         context,
         SlideUpPageRoute(
-          builder: (context) => NowPlayingPage(
-            song: _currentSong!,
-            isPlaying: _isPlaying,
-            onPlaybackStateChanged: _updatePlaybackState,
-            onClose: () {
-              Navigator.pop(context);
-            },
-          ),
+          builder: (context) => const NowPlayingPage(),
         ),
       ).then((_) {
-        if (_isPlaying) {
-          setState(() {
-            _isMiniPlayerVisible = true;
-          });
+        if (appState.isPlaying) {
+          setState(() => _isMiniPlayerVisible = true);
         }
       });
     }
   }
 
-  Widget _buildNavBarItem(int index, IconData icon, String label) {
+  Widget _buildNavBarItem(
+    int index,
+    IconData icon,
+    String label,
+    bool isDark,
+  ) {
     final isSelected = _selectedIndex == index;
-    
+    final activeColor = const Color(0xFFFF0000);
+    final inactiveColor = isDark ? Colors.grey[400]! : Colors.grey;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => _onItemTapped(index),
@@ -164,7 +162,8 @@ class _MainMusicPageState extends State<MainMusicPage> {
             border: Border(
               right: index < 4
                   ? BorderSide(
-                      color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.1),
+                      color: (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.08),
                       width: 1,
                     )
                   : BorderSide.none,
@@ -178,9 +177,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
                 children: [
                   Icon(
                     icon,
-                    color: isSelected 
-                        ? const Color(0xFFFF0000) 
-                        : Colors.grey,
+                    color: isSelected ? activeColor : inactiveColor,
                     size: 24,
                   ),
                   if (isSelected)
@@ -202,11 +199,10 @@ class _MainMusicPageState extends State<MainMusicPage> {
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected 
-                      ? const Color(0xFFFF0000) 
-                      : Colors.grey,
+                  color: isSelected ? activeColor : inactiveColor,
                   fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ],
@@ -218,69 +214,52 @@ class _MainMusicPageState extends State<MainMusicPage> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isDark = appState.isDarkMode;
+    final hasSong = appState.currentSong != null;
+    final showMiniPlayer =
+        hasSong && (appState.isPlaying || _isMiniPlayerVisible);
+
+    final bgColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
+    final navBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFD3D3D3),
+      backgroundColor: bgColor,
       body: Stack(
         children: [
-          // Page View for smooth transitions
           PageView(
             controller: _pageController,
             onPageChanged: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
+              setState(() => _selectedIndex = index);
             },
-            children: [
-              SongsPage(
-                onPlaySong: (song) {
-                  _updatePlaybackState(true, song: song);
-                  _navigateToNowPlaying();
-                },
-                songCount: mockSongs.length,
-              ),
-              const ArtistsPage(),
-              PlaylistsPage(
-                onPlayPlaylist: (playlistName) {
-                  _updatePlaybackState(true, song: mockSongs[0]);
-                  _navigateToNowPlaying();
-                },
-              ),
-              const AlbumsPage(),
-              FavouritesPage(
-                onPlaySong: (song) {
-                  _updatePlaybackState(true, song: song);
-                  _navigateToNowPlaying();
-                },
-              ),
+            children: const [
+              SongsPage(),
+              ArtistsPage(),
+              PlaylistsPage(),
+              AlbumsPage(),
+              FavouritesPage(),
             ],
           ),
-          
-          // Mini Player positioned above bottom nav
-          if (_currentSong != null && (_isPlaying || _isMiniPlayerVisible))
+
+          // Mini Player
+          if (showMiniPlayer)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              bottom: 20,
+              bottom: 8,
               left: 0,
               right: 0,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
-                opacity: (_isPlaying || _isMiniPlayerVisible) ? 1.0 : 0.0,
+                opacity: showMiniPlayer ? 1.0 : 0.0,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: MiniPlayer(
-                    key: ValueKey(_currentSong!.title),
-                    song: _currentSong!,
-                    isPlaying: _isPlaying,
-                    onVisibilityChanged: _updateMiniPlayerVisibility,
+                    key: ValueKey(appState.currentSong!.title),
                     onTap: _navigateToNowPlaying,
-                    onPlayPause: () {
-                      _updatePlaybackState(!_isPlaying);
-                    },
-                    onNext: () {
-                      int currentIndex = mockSongs.indexOf(_currentSong!);
-                      int nextIndex = (currentIndex + 1) % mockSongs.length;
-                      _updatePlaybackState(true, song: mockSongs[nextIndex]);
+                    onVisibilityChanged: (v) {
+                      setState(() => _isMiniPlayerVisible = v);
                     },
                   ),
                 ),
@@ -290,13 +269,12 @@ class _MainMusicPageState extends State<MainMusicPage> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(10),
-          ),
+          color: navBgColor,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(10)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 10,
               spreadRadius: 2,
               offset: const Offset(0, -2),
@@ -308,11 +286,12 @@ class _MainMusicPageState extends State<MainMusicPage> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                _buildNavBarItem(0, Icons.music_note, 'Songs'),
-                _buildNavBarItem(1, Icons.person, 'Artists'),
-                _buildNavBarItem(2, Icons.playlist_play, 'Playlists'),
-                _buildNavBarItem(3, Icons.album, 'Albums'),
-                _buildNavBarItem(4, Icons.favorite, 'Favourites'),
+                _buildNavBarItem(0, Icons.music_note, 'Songs', isDark),
+                _buildNavBarItem(1, Icons.person, 'Artists', isDark),
+                _buildNavBarItem(
+                    2, Icons.playlist_play, 'Playlists', isDark),
+                _buildNavBarItem(3, Icons.album, 'Albums', isDark),
+                _buildNavBarItem(4, Icons.favorite, 'Favourites', isDark),
               ],
             ),
           ),
@@ -322,70 +301,65 @@ class _MainMusicPageState extends State<MainMusicPage> {
   }
 }
 
+// ─────────────────────────────────────────────
+// Mini Player
+// ─────────────────────────────────────────────
 class MiniPlayer extends StatefulWidget {
-  final Song song;
-  final bool isPlaying;
-  final Function(bool) onVisibilityChanged;
   final VoidCallback onTap;
-  final VoidCallback onPlayPause;
-  final VoidCallback onNext;
-  
+  final Function(bool) onVisibilityChanged;
+
   const MiniPlayer({
     super.key,
-    required this.song,
-    required this.isPlaying,
-    required this.onVisibilityChanged,
     required this.onTap,
-    required this.onPlayPause,
-    required this.onNext,
+    required this.onVisibilityChanged,
   });
 
   @override
-  State<MiniPlayer> createState() => MiniPlayerState();
+  State<MiniPlayer> createState() => _MiniPlayerState();
 }
 
-class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
+class _MiniPlayerState extends State<MiniPlayer>
+    with TickerProviderStateMixin {
   late AnimationController _timerController;
   late Animation<double> _timerAnimation;
   bool _isTimerRunning = false;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     _timerController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
     );
-    
+
     _timerAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _timerController, curve: Curves.linear),
     );
-    
+
     _timerController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        if (mounted && !widget.isPlaying) {
+        final appState = context.read<AppState>();
+        if (mounted && !appState.isPlaying) {
           widget.onVisibilityChanged(false);
           _isTimerRunning = false;
         }
       }
     });
-    
-    if (!widget.isPlaying) {
-      _startTimer();
-    }
+
+    final appState = context.read<AppState>();
+    if (!appState.isPlaying) _startTimer();
   }
 
   @override
   void didUpdateWidget(MiniPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isPlaying != oldWidget.isPlaying) {
-      if (widget.isPlaying) {
-        _stopTimer();
-        widget.onVisibilityChanged(true);
-      } else {
-        _startTimer();
-      }
+    final appState = context.read<AppState>();
+    if (appState.isPlaying) {
+      _stopTimer();
+      widget.onVisibilityChanged(true);
+    } else {
+      _startTimer();
     }
   }
 
@@ -394,42 +368,45 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
     _timerController.dispose();
     super.dispose();
   }
-  
+
   void _startTimer() {
     _timerController.reset();
     widget.onVisibilityChanged(true);
     _timerController.forward();
-    setState(() {
-      _isTimerRunning = true;
-    });
+    if (mounted) setState(() => _isTimerRunning = true);
   }
-  
+
   void _stopTimer() {
     _timerController.stop();
     _timerController.reset();
-    setState(() {
-      _isTimerRunning = false;
-    });
+    if (mounted) setState(() => _isTimerRunning = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final song = appState.currentSong!;
+    final isPlaying = appState.isPlaying;
+    final isDark = appState.isDarkMode;
+
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 142, 142, 142).withValues(alpha: 0.15),
+          color: isDark
+              ? const Color(0xFF2A2A2A).withValues(alpha: 0.95)
+              : const Color(0xFF8E8E8E).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.2),
+            color: (isDark ? Colors.white : Colors.black)
+                .withValues(alpha: 0.15),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 12,
               spreadRadius: 2,
             ),
           ],
@@ -440,7 +417,8 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.1),
+              color: (isDark ? Colors.black : Colors.black)
+                  .withValues(alpha: 0.1),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -453,7 +431,8 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                           margin: const EdgeInsets.only(bottom: 8),
                           child: LinearProgressIndicator(
                             value: _timerAnimation.value,
-                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.2),
                             valueColor: AlwaysStoppedAnimation<Color>(
                               const Color(0xFFFF0000).withValues(alpha: 0.8),
                             ),
@@ -461,17 +440,17 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                         );
                       },
                     ),
-                  
                   Row(
                     children: [
+                      // Album art
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
                           gradient: RadialGradient(
                             colors: [
                               const Color(0xFFFF0000).withValues(alpha: 0.2),
-                              const Color(0xFFFF0000).withValues(alpha: 0.8),
+                              const Color(0xFFFF0000).withValues(alpha: 0.9),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(10),
@@ -483,13 +462,14 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(width: 12),
+                      // Song info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              widget.song.title,
+                              song.title,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -499,7 +479,7 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              widget.song.artist,
+                              song.artist,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
@@ -509,19 +489,21 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
+                      // Controls
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
-                            onTap: widget.onPlayPause,
+                            onTap: () => appState.togglePlayPause(),
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFF0000).withValues(alpha: 0.8),
+                                color: const Color(0xFFFF0000)
+                                    .withValues(alpha: 0.85),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                widget.isPlaying ? Icons.pause : Icons.play_arrow,
+                                isPlaying ? Icons.pause : Icons.play_arrow,
                                 color: Colors.white,
                                 size: 20,
                               ),
@@ -529,7 +511,7 @@ class MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: widget.onNext,
+                            onTap: () => appState.nextSong(),
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
