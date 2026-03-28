@@ -8,8 +8,12 @@ import 'screens/playlists_page.dart';
 import 'screens/albums_page.dart';
 import 'screens/favourites_page.dart';
 import 'screens/now_playing.dart';
+import 'screens/mood_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -129,7 +133,8 @@ class _MainMusicPageState extends State<MainMusicPage> {
 
   Widget _buildNavBarItem(int index, IconData icon, String label, bool isDark) {
     final isSelected = _selectedIndex == index;
-    final activeColor = const Color(0xFFFF0000);
+    final mood = context.watch<AppState>().currentMood;
+    final activeColor = mood?.gradientColors[0] ?? const Color(0xFFFF0000);
     final inactiveColor = isDark ? Colors.grey[400]! : Colors.grey;
 
     return Expanded(
@@ -187,6 +192,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
               PlaylistsPage(),
               AlbumsPage(),
               FavouritesPage(),
+              MoodPage(),
             ],
           ),
           if (showMiniPlayer)
@@ -234,6 +240,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
                 _buildNavBarItem(2, Icons.playlist_play, 'Playlists', isDark),
                 _buildNavBarItem(3, Icons.album, 'Albums', isDark),
                 _buildNavBarItem(4, Icons.favorite, 'Favourites', isDark),
+                _buildNavBarItem(5, Icons.mood, 'Moods', isDark),
               ],
             ),
           ),
@@ -331,6 +338,9 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
     final isPlaying = appState.isPlaying;
     final isDark = appState.isDarkMode;
 
+    final mood = appState.currentMood;
+    final moodColor = mood?.gradientColors[0] ?? const Color(0xFFFF0000);
+
     return Material(
       color: Colors.transparent,
       elevation: 8,
@@ -360,8 +370,8 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                       builder: (context, child) {
                         return LinearProgressIndicator(
                           value: _timerAnimation.value,
-                          backgroundColor: Color(0xFFFF0000).withValues(alpha: 0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFFFF0000)),
+                          backgroundColor: moodColor.withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(moodColor),
                         );
                       },
                     ),
@@ -373,7 +383,7 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                       height: 44,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [const Color(0xFFFF0000), const Color(0xFFFF5349)],
+                          colors: [moodColor, moodColor.withValues(alpha: 0.8)],
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -390,8 +400,8 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                         children: [
                           Text(
                             song.title,
-                            style: const TextStyle(
-                              color: Color(0xFFFF0000),
+                            style: TextStyle(
+                              color: moodColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -416,13 +426,13 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                           onPressed: () => appState.togglePlayPause(),
                           icon: Icon(
                             isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                            color: const Color(0xFFFF0000),
+                            color: moodColor,
                             size: 32,
                           ),
                         ),
                         IconButton(
                           onPressed: () => appState.nextSong(),
-                          icon: const Icon(Icons.skip_next, color: Color(0xFFFF0000), size: 28),
+                          icon: Icon(Icons.skip_next, color: moodColor, size: 28),
                         ),
                       ],
                     ),

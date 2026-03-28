@@ -139,6 +139,10 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
 
+    final mood = appState.currentMood;
+    final moodColor1 = mood?.gradientColors[0] ?? const Color(0xFFFF0000);
+    final moodColor2 = mood?.gradientColors[1] ?? const Color(0xFFFF5349);
+
     _updateRotation(isPlaying);
 
     return Scaffold(
@@ -147,10 +151,10 @@ class _NowPlayingPageState extends State<NowPlayingPage>
         backgroundColor: cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_downward, color: Color(0xFFFF0000)),
+          icon: Icon(Icons.arrow_downward, color: moodColor1),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Now Playing', style: TextStyle(color: Color(0xFFFF0000), fontWeight: FontWeight.bold)),
+        title: Text('Now Playing', style: TextStyle(color: moodColor1, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Column(
@@ -169,11 +173,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: SweepGradient(
-                          colors: [const Color(0xFFFF0000), Colors.black, const Color(0xFFFF0000)],
+                          colors: [moodColor1, Colors.black, moodColor1],
                         ),
                         border: Border.all(color: Colors.white12, width: 8),
                         boxShadow: [
-                          BoxShadow(color: const Color(0xFFFF0000).withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
+                          BoxShadow(color: moodColor1.withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
                         ],
                       ),
                       child: Center(
@@ -205,7 +209,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                   LinearProgressIndicator(
                     value: 0.45,
                     backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF0000)),
+                    valueColor: AlwaysStoppedAnimation<Color>(moodColor1),
                     minHeight: 4,
                   ),
                   const SizedBox(height: 8),
@@ -236,7 +240,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         onTap: () => appState.togglePlayPause(),
                         child: Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: const BoxDecoration(color: Color(0xFFFF0000), shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: moodColor1, shape: BoxShape.circle),
                           child: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 40),
                         ),
                       ),
@@ -247,7 +251,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: Icon(Icons.repeat, color: appState.isRepeatOn ? const Color(0xFFFF0000) : Colors.grey),
+                        icon: Icon(Icons.repeat, color: appState.isRepeatOn ? moodColor1 : Colors.grey),
                         onPressed: () => appState.toggleRepeat(),
                       ),
                     ],
@@ -265,15 +269,15 @@ class _NowPlayingPageState extends State<NowPlayingPage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: Icon(song.isFavorite ? Icons.favorite : Icons.favorite_border, color: const Color(0xFFFF0000), size: 30),
+                  icon: Icon(song.isFavorite ? Icons.favorite : Icons.favorite_border, color: moodColor1, size: 30),
                   onPressed: () => appState.toggleFavorite(song),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.playlist_add, color: Color(0xFFFF0000), size: 32),
+                  icon: Icon(Icons.playlist_add, color: moodColor1, size: 32),
                   onPressed: () => _showAddToPlaylistSheet(song),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.more_vert, color: Color(0xFFFF0000), size: 30),
+                  icon: Icon(Icons.more_vert, color: moodColor1, size: 30),
                   onPressed: () => _showMoreOptionsModal(appState),
                 ),
               ],

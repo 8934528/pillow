@@ -5,6 +5,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path/path.dart' as p;
 import '../models/song_model.dart';
+import '../models/mood_model.dart';
+import '../services/youtube_service.dart';
 
 class AppState extends ChangeNotifier {
   // ── Playback ────────────────────────────────────────────────────
@@ -47,6 +49,9 @@ class AppState extends ChangeNotifier {
   // ── Mode ────────────────────────────────────────────────────────
   String _appMode = 'offline';
   String get appMode => _appMode;
+
+  Mood? _currentMood;
+  Mood? get currentMood => _currentMood;
 
   AppState() {
     _initAudio();
@@ -271,6 +276,40 @@ class AppState extends ChangeNotifier {
 
   void setStorageLocation(String location) {
     storageLocation = location;
+    notifyListeners();
+  }
+
+  void setMood(Mood? mood) {
+    _currentMood = mood;
+    notifyListeners();
+  }
+
+  // ── Online Search ────────────────────────────────────────────────
+  List<Map<String, String>> _onlineSearchResults = [];
+  List<Map<String, String>> get onlineSearchResults => List.unmodifiable(_onlineSearchResults);
+  
+  bool _isSearchingOnline = false;
+  bool get isSearchingOnline => _isSearchingOnline;
+
+  Future<void> searchOnline(String query) async {
+    if (query.isEmpty) return;
+    _isSearchingOnline = true;
+    notifyListeners();
+    
+    try {
+      final results = await YouTubeService.searchVideos(query);
+      _onlineSearchResults = results;
+    } catch (e) {
+      print('Error searching online: $e');
+      _onlineSearchResults = [];
+    } finally {
+      _isSearchingOnline = false;
+      notifyListeners();
+    }
+  }
+
+  void clearOnlineResults() {
+    _onlineSearchResults = [];
     notifyListeners();
   }
 }

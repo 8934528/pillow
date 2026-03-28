@@ -5,6 +5,7 @@ import '../models/song_model.dart';
 import 'settings.dart';
 import 'mode.dart';
 import 'now_playing.dart';
+import 'online_search_page.dart';
 import '../main.dart';
 
 class SongsPage extends StatefulWidget {
@@ -283,10 +284,9 @@ class _SongsPageState extends State<SongsPage>
             },
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFFFF0000)),
-            onPressed: () async {
-              _showToast('Scanning music folder...');
-              await appState.scanMusic();
+            icon: const Icon(Icons.public, color: Color(0xFFFF0000)),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const OnlineSearchPage()));
             },
           ),
           _appBarMenuButton(context),
