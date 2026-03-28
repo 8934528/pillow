@@ -377,7 +377,10 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.music_note, color: Colors.white, size: 24),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset('assets/pillow.png', height: 44, width: 44, fit: BoxFit.cover),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

@@ -257,9 +257,18 @@ class _SongsPageState extends State<SongsPage>
                 style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 onChanged: (_) => setState(() {}),
               )
-            : const Text(
-                'Pillow Music',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF0000)),
+            : Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset('assets/pillow.png', height: 32, width: 32, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Pillow Music',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF0000)),
+                  ),
+                ],
               ),
         backgroundColor: cardColor,
         elevation: 0,

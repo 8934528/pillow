@@ -176,7 +176,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                           BoxShadow(color: const Color(0xFFFF0000).withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
                         ],
                       ),
-                      child: const Center(child: Icon(Icons.music_note, size: 60, color: Colors.white)),
+                      child: Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: Image.asset('assets/pillow.png', width: 120, height: 120, fit: BoxFit.cover),
+                        ),
+                      ),
                     ),
                   );
                 },
