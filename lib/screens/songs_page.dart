@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/app_state.dart';
-import '../models/song_model.dart';
+
 import 'settings.dart';
 import 'mode.dart';
 import 'now_playing.dart';
 import 'online_search_page.dart';
+
 import '../main.dart';
 import '../utils/notification_utils.dart';
+import '../providers/app_state.dart';
+import '../models/song_model.dart';
 
 class SongsPage extends StatefulWidget {
   const SongsPage({super.key});

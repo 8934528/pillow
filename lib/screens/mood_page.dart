@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../providers/app_state.dart';
 import '../models/mood_model.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MoodPage extends StatefulWidget {
   const MoodPage({super.key});

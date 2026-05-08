@@ -1,27 +1,35 @@
-import 'serp_service.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:logger/logger.dart';
 
 class YouTubeService {
   static final _logger = Logger();
+  static final _yt = YoutubeExplode();
 
   static Future<List<Map<String, String>>> searchVideos(String query) async {
-    
     try {
-      final results = await SerpService.search(query, engine: 'youtube');
-      final videoResults = results['video_results'] as List?;
+      final results = await _yt.search.search(query);
       
-      if (videoResults != null) {
-        return videoResults.map((v) => {
-          'title': (v['title'] ?? '').toString(),
-          'link': (v['link'] ?? '').toString(),
-          'thumbnail': (v['thumbnail'] ?? '').toString(),
-          'channel': (v['channel']?['name'] ?? '').toString(),
-        }).toList();
-      }
+      return results.map((v) => {
+        'title': v.title,
+        'link': v.url,
+        'thumbnail': v.thumbnails.mediumResUrl,
+        'channel': v.author,
+      }).toList();
     } catch (e) {
       _logger.e('Error searching YouTube: $e');
     }
     
     return [];
+  }
+
+  static Future<String?> getAudioStreamUrl(String url) async {
+    try {
+      final manifest = await _yt.videos.streamsClient.getManifest(url);
+      final audioOnly = manifest.audioOnly.withHighestBitrate();
+      return audioOnly.url.toString();
+    } catch (e) {
+      _logger.e('Error getting audio stream: $e');
+      return null;
+    }
   }
 }

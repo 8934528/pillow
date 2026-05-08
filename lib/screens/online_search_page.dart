@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../providers/app_state.dart';
 import '../utils/notification_utils.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'now_playing.dart';
 
 class OnlineSearchPage extends StatefulWidget {
   const OnlineSearchPage({super.key});
@@ -47,18 +49,18 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
 
     final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFD3D3D3);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final accentColor = const Color(0xFFFF0000);
+    final accentColor = const Color(0xFF00B4DB);
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Online Search', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF0000))),
+        title: const Text('Online Search', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00B4DB))),
         backgroundColor: cardColor,
         elevation: 0,
         actions: [
           if (results.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.clear_all, color: Color(0xFFFF0000)),
+              icon: const Icon(Icons.clear_all, color: Color(0xFF00B4DB)),
               onPressed: () => appState.clearOnlineResults(),
             ),
         ],
@@ -83,9 +85,9 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search YouTube movies...',
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFFFF0000)),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF00B4DB)),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.send, color: Color(0xFFFF0000)),
+                    icon: const Icon(Icons.send, color: Color(0xFF00B4DB)),
                     onPressed: _performSearch,
                   ),
                   border: InputBorder.none,
@@ -96,7 +98,7 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
             ),
           ),
           if (isSearching)
-            const LinearProgressIndicator(color: Color(0xFFFF0000)),
+            const LinearProgressIndicator(color: Color(0xFF00B4DB)),
           Expanded(
             child: results.isEmpty
                 ? _buildEmptyState(isSearching)
@@ -134,12 +136,12 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 100, height: 60, color: accentColor.withValues(alpha: 0.1),
-                  child: const Icon(Icons.video_library, color: Color(0xFFFF0000)),
+                  child: const Icon(Icons.video_library, color: Color(0xFF00B4DB)),
                 ),
               )
             : Container(
                 width: 100, height: 60, color: accentColor.withValues(alpha: 0.1),
-                child: const Icon(Icons.video_library, color: Color(0xFFFF0000)),
+                child: const Icon(Icons.video_library, color: Color(0xFF00B4DB)),
               ),
         ),
         title: Text(
@@ -152,20 +154,12 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
           item['channel'] ?? 'Unknown channel',
           style: const TextStyle(fontSize: 12),
         ),
-        onTap: () async {
-          final url = item['link'];
-          if (url != null) {
-            try {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } else {
-                if (mounted) NotificationUtils.showErrorToast(context, 'Could not launch YouTube link');
-              }
-            } catch (e) {
-              if (mounted) NotificationUtils.showErrorAlert(context, 'Invalid URL: $e', title: 'Navigation Error');
-            }
-          }
+        onTap: () {
+          context.read<AppState>().playOnlineItem(item);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NowPlayingPage()),
+          );
         },
       ),
     );

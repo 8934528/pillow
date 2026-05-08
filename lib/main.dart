@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'providers/app_state.dart';
+
 import 'screens/songs_page.dart';
 import 'screens/artists_page.dart';
 import 'screens/playlists_page.dart';
@@ -10,7 +13,6 @@ import 'screens/now_playing.dart';
 import 'screens/mood_page.dart';
 import 'screens/online_search_page.dart';
 import 'screens/equalizer_page.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -221,7 +223,8 @@ class _MainMusicPageState extends State<MainMusicPage> {
               title: Text('Mode: ${isOnline ? "Online" : "Offline"}', style: const TextStyle(fontWeight: FontWeight.bold)),
               trailing: Switch(
                 value: isOnline,
-                activeColor: onlineColor,
+                activeTrackColor: onlineColor.withValues(alpha: 0.5),
+                activeThumbColor: onlineColor,
                 onChanged: (v) {
                   appState.setAppMode(v ? 'online' : 'offline');
                   setState(() {
@@ -251,7 +254,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
             const Spacer(),
             const Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Version 1.0.0', style: TextStyle(color: Colors.grey)),
+              child: Text('Version 1.9.3', style: TextStyle(color: Colors.grey)),
             ),
           ],
         ),

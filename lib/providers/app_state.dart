@@ -1,29 +1,35 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;
+
 import '../models/song_model.dart';
 import '../models/mood_model.dart';
 import '../services/youtube_service.dart';
 
 class AppState extends ChangeNotifier {
-  // ── Playback ────────────────────────────────────────────────────
+  // Playback
   Song? _currentSong;
   bool _isPlaying = false;
   bool _isShuffleOn = false;
   bool _isRepeatOn = false;
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
+  late final AudioPlayer _audioPlayer;
+  AndroidEqualizer? _androidEqualizer;
+  AndroidEqualizerParameters? _equalizerParameters;
   Song? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   bool get isShuffleOn => _isShuffleOn;
   bool get isRepeatOn => _isRepeatOn;
 
-  // ── Library ─────────────────────────────────────────────────────
-  List<Song> _songs = [...mockSongs];
+  Stream<Duration> get positionStream => _audioPlayer.positionStream;
+  Stream<Duration> get bufferedPositionStream => _audioPlayer.bufferedPositionStream;
+  Stream<Duration?> get durationStream => _audioPlayer.durationStream;
+
+  // Library
+  List<Song> _songs = [];
   List<Song> get songs => List.unmodifiable(_songs);
 
   List<Song> get favoriteSongs =>
@@ -32,29 +38,29 @@ class AppState extends ChangeNotifier {
   bool _isScanning = false;
   bool get isScanning => _isScanning;
 
-  // ── Playlists ───────────────────────────────────────────────────
+  // Playlists
   final List<Playlist> _playlists = [];
   List<Playlist> get playlists => List.unmodifiable(_playlists);
 
-  // ── Theme ───────────────────────────────────────────────────────
+  // Theme
   bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
 
-  // ── Settings ────────────────────────────────────────────────────
+  // Settings
   bool notificationsEnabled = true;
   bool autoDownloadEnabled = false;
   bool equalizerEnabled = false;
   String audioQuality = 'High';
   String storageLocation = 'Internal Storage';
 
-  // ── Mode ────────────────────────────────────────────────────────
+  // Mode
   String _appMode = 'offline';
   String get appMode => _appMode;
 
   Mood? _currentMood;
   Mood? get currentMood => _currentMood;
 
-  // ── Equalizer ───────────────────────────────────────────────────
+  // Equalizer
   List<double> _equalizerGains = [0.0, 0.0, 0.0, 0.0, 0.0]; // 60, 230, 910, 4k, 14k
   String _activePreset = 'Flat';
 
@@ -66,20 +72,34 @@ class AppState extends ChangeNotifier {
   }
 
   void _initAudio() {
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      _isPlaying = state == PlayerState.playing;
+    if (!kIsWeb && Platform.isAndroid) {
+      _androidEqualizer = AndroidEqualizer();
+      _audioPlayer = AudioPlayer(
+        audioPipeline: AudioPipeline(androidAudioEffects: [_androidEqualizer!]),
+      );
+      _androidEqualizer!.parameters.then((params) {
+        _equalizerParameters = params;
+        _applyEqualizerGains();
+      });
+    } else {
+      _audioPlayer = AudioPlayer();
+    }
+
+    _audioPlayer.playerStateStream.listen((state) {
+      _isPlaying = state.playing;
       notifyListeners();
-    });
-    _audioPlayer.onPlayerComplete.listen((event) {
-      if (_isRepeatOn) {
-        if (_currentSong != null) playSong(_currentSong!);
-      } else {
-        nextSong();
+      
+      if (state.processingState == ProcessingState.completed) {
+        if (_isRepeatOn) {
+          if (_currentSong != null) playSong(_currentSong!);
+        } else {
+          nextSong();
+        }
       }
     });
   }
 
-  // ── Artists/Albums (derived) ─────────────────────────────────────
+  // Artists/Albums (derived)
   List<String> get artists {
     final set = <String>{};
     for (final s in _songs) {
@@ -102,24 +122,55 @@ class AppState extends ChangeNotifier {
   List<Song> songsForAlbum(String album) =>
       _songs.where((s) => s.album == album).toList();
 
-  // ── Playback Methods ─────────────────────────────────────────────
+  // Playback Methods
   Future<void> playSong(Song song) async {
     _currentSong = song;
+    notifyListeners();
     try {
-      if (song.filePath != null && !kIsWeb) {
-        await _audioPlayer.play(DeviceFileSource(song.filePath!));
-      } else if (song.isOnline) {
-        // In a real app, we'd have a URL here
-        // For now, we simulate playing
-        await _audioPlayer.resume();
+      if (song.isOnline && song.filePath != null) {
+        final streamUrl = await YouTubeService.getAudioStreamUrl(song.filePath!);
+        if (streamUrl != null) {
+          await _audioPlayer.setUrl(streamUrl);
+          await _audioPlayer.play();
+        }
+      } else if (song.filePath != null && !kIsWeb) {
+        await _audioPlayer.setFilePath(song.filePath!);
+        await _audioPlayer.play();
       } else {
-        // Fallback for mock songs
-        await _audioPlayer.resume();
+        await _audioPlayer.play();
       }
     } catch (e) {
       debugPrint('Error playing song: $e');
     }
-    notifyListeners();
+  }
+
+  Future<void> playOnlineItem(Map<String, String> item) async {
+    final link = item['link'];
+    if (link == null) return;
+    
+    final song = Song(
+      title: item['title'] ?? 'Unknown',
+      artist: item['channel'] ?? 'Unknown',
+      duration: '0:00',
+      album: 'Online Search',
+      isOnline: true,
+      filePath: link,
+    );
+    await playSong(song);
+  }
+
+  Future<void> seek(Duration position) async {
+    await _audioPlayer.seek(position);
+  }
+
+  Future<void> seekForward([int seconds = 10]) async {
+    final pos = _audioPlayer.position + Duration(seconds: seconds);
+    await _audioPlayer.seek(pos);
+  }
+
+  Future<void> seekBackward([int seconds = 10]) async {
+    final pos = _audioPlayer.position - Duration(seconds: seconds);
+    await _audioPlayer.seek(pos < Duration.zero ? Duration.zero : pos);
   }
 
   Future<void> togglePlayPause() async {
@@ -127,7 +178,7 @@ class AppState extends ChangeNotifier {
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
-        await _audioPlayer.resume();
+        await _audioPlayer.play();
       }
     } catch (e) {
       debugPrint('Error toggling play/pause: $e');
@@ -169,13 +220,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Favourite Methods ───────────────────────────────────────────
+  // Favourite Methods
   void toggleFavorite(Song song) {
     song.isFavorite = !song.isFavorite;
     notifyListeners();
   }
 
-  // ── Music Scanning ──────────────────────────────────────────────
+  // Music Scanning
   Future<void> scanMusic() async {
     if (_isScanning) return;
     _isScanning = true;
@@ -183,11 +234,9 @@ class AppState extends ChangeNotifier {
 
     try {
       if (!kIsWeb && Platform.isAndroid) {
-        // On Android 13+ (API 33), we need AUDIO permission for music files
         if (await Permission.audio.isDenied) {
           await Permission.audio.request();
         }
-        // Fallback or additional permission for older devices
         var storageStatus = await Permission.storage.request();
         if (storageStatus.isDenied) {
           _isScanning = false;
@@ -225,7 +274,7 @@ class AppState extends ChangeNotifier {
         }
         
         if (foundSongs.isNotEmpty) {
-          _songs = [...mockSongs, ...foundSongs];
+          _songs = foundSongs;
         }
       }
     } catch (e) {
@@ -236,7 +285,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // ── Playlist Methods ─────────────────────────────────────────────
+  // Playlist Methods
   void createPlaylist(String name) {
     if (name.trim().isEmpty) return;
     _playlists.add(Playlist(name: name.trim()));
@@ -266,7 +315,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // ── Theme/Mode ──────────────────────────────────────────────────
+  // Theme/Mode
   void toggleDarkMode() {
     _isDarkMode = !_isDarkMode;
     notifyListeners();
@@ -282,7 +331,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Settings ────────────────────────────────────────────────────
+  // Settings
   void setNotifications(bool value) {
     notificationsEnabled = value;
     notifyListeners();
@@ -295,6 +344,9 @@ class AppState extends ChangeNotifier {
 
   void setEqualizer(bool value) {
     equalizerEnabled = value;
+    if (_androidEqualizer != null) {
+      _androidEqualizer!.setEnabled(value);
+    }
     notifyListeners();
   }
 
@@ -313,11 +365,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Equalizer Methods ───────────────────────────────────────────
+  // Equalizer Methods
   void setEqualizerGain(int index, double gain) {
     if (index >= 0 && index < _equalizerGains.length) {
       _equalizerGains[index] = gain;
       _activePreset = 'Custom';
+      _applyEqualizerGains();
       notifyListeners();
     }
   }
@@ -341,10 +394,19 @@ class AppState extends ChangeNotifier {
         _equalizerGains = [2.0, 1.5, 0.0, 2.5, 1.0];
         break;
     }
+    _applyEqualizerGains();
     notifyListeners();
   }
 
-  // ── Online Search ────────────────────────────────────────────────
+  void _applyEqualizerGains() {
+    if (_equalizerParameters != null) {
+      for (int i = 0; i < _equalizerGains.length && i < _equalizerParameters!.bands.length; i++) {
+        _equalizerParameters!.bands[i].setGain(_equalizerGains[i]);
+      }
+    }
+  }
+
+  // Online Search
   List<Map<String, String>> _onlineSearchResults = [];
   List<Map<String, String>> get onlineSearchResults => List.unmodifiable(_onlineSearchResults);
   

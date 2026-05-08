@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'now_playing.dart';
+
 import '../providers/app_state.dart';
 import '../models/song_model.dart';
-import 'now_playing.dart';
 import '../main.dart';
 
 class FavouritesPage extends StatefulWidget {

@@ -1,5 +1,9 @@
 # Pillow
 
+![Version](https://img.shields.io/badge/version-1.9.3-red)
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+
  music player application built with Flutter. Pillow offers a sleek and intuitive interface for managing and playing your music collection.
 
 ## Screenshots
@@ -91,23 +95,7 @@
 
 ### Installation
 
-1. Clone the repository
-
-            bash
-            git clone https://github.com/yourusername/pillow.git
-            cd pillow
-
-2. Install dependencies
-
-            flutter pub get
-
-3. Configure Environment
-    - Create a `.env` file in the root directory
-    - Add your SerpApi key: `SERP_API_KEY=your_api_key_here`
-
-4. Run the app
-
-            flutter run
+For detailed installation instructions, please refer to [SETUP.md](SETUP.md).
 
 ---
 
@@ -148,25 +136,6 @@
 
 ## Contributing
 
-- Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch
-
-            git checkout -b feature/AmazingFeature
-
-3. Commit your changes
-
-            git commit -m 'Add some AmazingFeature'
-
-4. Push to the branch
-
-            git push origin feature/AmazingFeature
-
-5. Open a Pull Request
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ---
-
-## License
-
-- This project is licensed under the MIT License - see the LICENSE file for details.

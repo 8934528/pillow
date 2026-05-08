@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/app_state.dart';
 import '../utils/notification_utils.dart';
+
 import 'drive_mode.dart';
 
 class ModePage extends StatelessWidget {
