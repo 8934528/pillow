@@ -254,7 +254,7 @@ class _MainMusicPageState extends State<MainMusicPage> {
             const Spacer(),
             const Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Version 1.0.0', style: TextStyle(color: Colors.grey)),
+              child: Text('Version 1.9.3', style: TextStyle(color: Colors.grey)),
             ),
           ],
         ),
