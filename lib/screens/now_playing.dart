@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 import '../providers/app_state.dart';
 import '../models/song_model.dart';
@@ -31,7 +32,26 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   @override
   void dispose() {
     _rotationController.dispose();
+    _seekTimer?.cancel();
     super.dispose();
+  }
+
+  Timer? _seekTimer;
+
+  void _startFastForward(AppState appState) {
+    _seekTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      appState.seekForward(5);
+    });
+  }
+
+  void _startRewind(AppState appState) {
+    _seekTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      appState.seekBackward(5);
+    });
+  }
+
+  void _stopSeek() {
+    _seekTimer?.cancel();
   }
 
   void _updateRotation(bool isPlaying) {
@@ -210,19 +230,52 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                   const SizedBox(height: 24),
                   
                   // Progress
-                  LinearProgressIndicator(
-                    value: 0.45,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: AlwaysStoppedAnimation<Color>(moodColor1),
-                    minHeight: 4,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('1:45', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                      Text(song.duration, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                    ],
+                  StreamBuilder<Duration>(
+                    stream: appState.positionStream,
+                    builder: (context, positionSnapshot) {
+                      final position = positionSnapshot.data ?? Duration.zero;
+                      return StreamBuilder<Duration?>(
+                        stream: appState.durationStream,
+                        builder: (context, durationSnapshot) {
+                          final duration = durationSnapshot.data ?? Duration.zero;
+
+                          String formatDuration(Duration d) {
+                            final min = d.inMinutes;
+                            final sec = (d.inSeconds % 60).toString().padLeft(2, '0');
+                            return '$min:$sec';
+                          }
+
+                          return Column(
+                            children: [
+                              SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 4.0,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+                                ),
+                                child: Slider(
+                                  value: position.inMilliseconds.toDouble().clamp(0.0, duration.inMilliseconds.toDouble() > 0 ? duration.inMilliseconds.toDouble() : 1.0),
+                                  max: duration.inMilliseconds.toDouble() > 0 ? duration.inMilliseconds.toDouble() : 1.0,
+                                  activeColor: moodColor1,
+                                  inactiveColor: Colors.grey[300],
+                                  onChanged: (val) {
+                                    appState.seek(Duration(milliseconds: val.round()));
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(formatDuration(position), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                  Text(formatDuration(duration), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -235,9 +288,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         onPressed: () => appState.toggleShuffle(),
                       ),
                       const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(Icons.skip_previous, size: 48, color: moodColor1),
-                        onPressed: () => appState.prevSong(),
+                      GestureDetector(
+                        onTap: () => appState.prevSong(),
+                        onLongPressStart: (_) => _startRewind(appState),
+                        onLongPressEnd: (_) => _stopSeek(),
+                        child: Icon(Icons.skip_previous, size: 48, color: moodColor1),
                       ),
                       const SizedBox(width: 16),
                       GestureDetector(
@@ -249,9 +304,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         ),
                       ),
                       const SizedBox(width: 16),
-                      IconButton(
-                        icon: Icon(Icons.skip_next, size: 48, color: moodColor1),
-                        onPressed: () => appState.nextSong(),
+                      GestureDetector(
+                        onTap: () => appState.nextSong(),
+                        onLongPressStart: (_) => _startFastForward(appState),
+                        onLongPressEnd: (_) => _stopSeek(),
+                        child: Icon(Icons.skip_next, size: 48, color: moodColor1),
                       ),
                       const SizedBox(width: 8),
                       IconButton(

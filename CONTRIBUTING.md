@@ -27,15 +27,22 @@ Have an idea for a new feature? I'd love to hear it! Open an issue describing:
 
 ### Pull Requests
 
-I'd love to see your pull requests! If you're working on a feature or bug fix:
+- Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/your-feature-name`)
-3. Make your changes
-4. Test your changes to ensure they work and don't break existing functionality
-5. Commit your changes (`git commit -m "Add some feature"`)
-6. Push to the branch (`git push origin feature/your-feature-name`)
-7. Open a Pull Request
+1. Fork the project
+2. Create your feature branch
+
+        git checkout -b feature/AmazingFeature
+
+3. Commit your changes
+
+        git commit -m 'Add some AmazingFeature'
+
+4. Push to the branch
+
+        git push origin feature/AmazingFeature
+
+5. Open a Pull Request
 
 ## Coding Guidelines
 

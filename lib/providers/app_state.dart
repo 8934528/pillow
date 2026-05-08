@@ -16,12 +16,17 @@ class AppState extends ChangeNotifier {
   bool _isPlaying = false;
   bool _isShuffleOn = false;
   bool _isRepeatOn = false;
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
+  late final AudioPlayer _audioPlayer;
+  AndroidEqualizer? _androidEqualizer;
+  AndroidEqualizerParameters? _equalizerParameters;
   Song? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   bool get isShuffleOn => _isShuffleOn;
   bool get isRepeatOn => _isRepeatOn;
+
+  Stream<Duration> get positionStream => _audioPlayer.positionStream;
+  Stream<Duration> get bufferedPositionStream => _audioPlayer.bufferedPositionStream;
+  Stream<Duration?> get durationStream => _audioPlayer.durationStream;
 
   // Library
   List<Song> _songs = [];
@@ -67,6 +72,19 @@ class AppState extends ChangeNotifier {
   }
 
   void _initAudio() {
+    if (!kIsWeb && Platform.isAndroid) {
+      _androidEqualizer = AndroidEqualizer();
+      _audioPlayer = AudioPlayer(
+        audioPipeline: AudioPipeline(androidAudioEffects: [_androidEqualizer!]),
+      );
+      _androidEqualizer!.parameters.then((params) {
+        _equalizerParameters = params;
+        _applyEqualizerGains();
+      });
+    } else {
+      _audioPlayer = AudioPlayer();
+    }
+
     _audioPlayer.playerStateStream.listen((state) {
       _isPlaying = state.playing;
       notifyListeners();
@@ -107,11 +125,16 @@ class AppState extends ChangeNotifier {
   // Playback Methods
   Future<void> playSong(Song song) async {
     _currentSong = song;
+    notifyListeners();
     try {
-      if (song.filePath != null && !kIsWeb) {
+      if (song.isOnline && song.filePath != null) {
+        final streamUrl = await YouTubeService.getAudioStreamUrl(song.filePath!);
+        if (streamUrl != null) {
+          await _audioPlayer.setUrl(streamUrl);
+          await _audioPlayer.play();
+        }
+      } else if (song.filePath != null && !kIsWeb) {
         await _audioPlayer.setFilePath(song.filePath!);
-        await _audioPlayer.play();
-      } else if (song.isOnline) {
         await _audioPlayer.play();
       } else {
         await _audioPlayer.play();
@@ -119,7 +142,35 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error playing song: $e');
     }
-    notifyListeners();
+  }
+
+  Future<void> playOnlineItem(Map<String, String> item) async {
+    final link = item['link'];
+    if (link == null) return;
+    
+    final song = Song(
+      title: item['title'] ?? 'Unknown',
+      artist: item['channel'] ?? 'Unknown',
+      duration: '0:00',
+      album: 'Online Search',
+      isOnline: true,
+      filePath: link,
+    );
+    await playSong(song);
+  }
+
+  Future<void> seek(Duration position) async {
+    await _audioPlayer.seek(position);
+  }
+
+  Future<void> seekForward([int seconds = 10]) async {
+    final pos = _audioPlayer.position + Duration(seconds: seconds);
+    await _audioPlayer.seek(pos);
+  }
+
+  Future<void> seekBackward([int seconds = 10]) async {
+    final pos = _audioPlayer.position - Duration(seconds: seconds);
+    await _audioPlayer.seek(pos < Duration.zero ? Duration.zero : pos);
   }
 
   Future<void> togglePlayPause() async {
@@ -293,6 +344,9 @@ class AppState extends ChangeNotifier {
 
   void setEqualizer(bool value) {
     equalizerEnabled = value;
+    if (_androidEqualizer != null) {
+      _androidEqualizer!.setEnabled(value);
+    }
     notifyListeners();
   }
 
@@ -316,6 +370,7 @@ class AppState extends ChangeNotifier {
     if (index >= 0 && index < _equalizerGains.length) {
       _equalizerGains[index] = gain;
       _activePreset = 'Custom';
+      _applyEqualizerGains();
       notifyListeners();
     }
   }
@@ -339,7 +394,16 @@ class AppState extends ChangeNotifier {
         _equalizerGains = [2.0, 1.5, 0.0, 2.5, 1.0];
         break;
     }
+    _applyEqualizerGains();
     notifyListeners();
+  }
+
+  void _applyEqualizerGains() {
+    if (_equalizerParameters != null) {
+      for (int i = 0; i < _equalizerGains.length && i < _equalizerParameters!.bands.length; i++) {
+        _equalizerParameters!.bands[i].setGain(_equalizerGains[i]);
+      }
+    }
   }
 
   // Online Search

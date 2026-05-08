@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_state.dart';
 import '../utils/notification_utils.dart';
+import 'now_playing.dart';
 
 class OnlineSearchPage extends StatefulWidget {
   const OnlineSearchPage({super.key});
@@ -153,20 +154,12 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
           item['channel'] ?? 'Unknown channel',
           style: const TextStyle(fontSize: 12),
         ),
-        onTap: () async {
-          final url = item['link'];
-          if (url != null) {
-            try {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } else {
-                if (mounted) NotificationUtils.showErrorToast(context, 'Could not launch YouTube link');
-              }
-            } catch (e) {
-              if (mounted) NotificationUtils.showErrorAlert(context, 'Invalid URL: $e', title: 'Navigation Error');
-            }
-          }
+        onTap: () {
+          context.read<AppState>().playOnlineItem(item);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NowPlayingPage()),
+          );
         },
       ),
     );

@@ -6,44 +6,50 @@
 
 This guide will help you set up the Pillow Music Player locally on your machine.
 
-## 1. Prerequisites
+## Prerequisites
 
 - Flutter SDK (>= 3.0.0)
 - Dart SDK (>= 3.0.0)
 - Android Studio or VS Code with Flutter extensions installed
-- An Android device or emulator for testing
+- An Android device or emulator (or Windows desktop) for testing
 
-## 2. Getting the Code
+---
 
-Clone the repository to your local machine:
+## Installation
+
+### 1. Clone the repository
+
+Open your terminal and run the following commands to clone the project and navigate into the directory:
 
 ```bash
 git clone https://github.com/yourusername/pillow.git
 cd pillow
 ```
 
-## 3. Environment Variables
+### 2. Install dependencies
 
-Pillow requires some API keys to fetch online music data. Create a `.env` file in the root directory and add the following keys:
-
-```properties
-YOUTUBE_SEARCH_KEY=your_api_key
-YOUTUBE_DATA_API_KEY=your_api_key
-SERP_API_KEY=your_api_key
-```
-
-*Note: You can get a free SerpApi key from [SerpApi.com](https://serpapi.com/) and a YouTube Data API v3 key from the [Google Cloud Console](https://console.cloud.google.com/).*
-
-## 4. Install Dependencies
-
-Clean the project and fetch all required packages:
+Fetch all required Flutter packages by running:
 
 ```bash
-flutter clean
 flutter pub get
 ```
 
-## 5. Run the App
+### 3. Configure Environment
+
+Pillow requires some API keys to fetch online music data.
+
+- Create a `.env` file in the root directory of the project.
+- Add your API keys to the `.env` file:
+
+```properties
+SERP_API_KEY=your_api_key_here
+YOUTUBE_SEARCH_KEY=your_api_key_here
+YOUTUBE_DATA_API_KEY=your_api_key_here
+```
+
+*(Note: If you are using the built-in `youtube_explode_dart` package, some of these keys may be optional, but the `.env` file should still exist).*
+
+### 4. Run the app
 
 You are now ready to run the app on your connected device or emulator!
 
