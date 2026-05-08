@@ -1,5 +1,9 @@
 # Pillow
 
+![Version](https://img.shields.io/badge/version-1.9.3-red)
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+
  music player application built with Flutter. Pillow offers a sleek and intuitive interface for managing and playing your music collection.
 
 ## Screenshots

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/app_state.dart';
 import '../models/song_model.dart';
+
 import 'equalizer_page.dart';
 
 class NowPlayingPage extends StatefulWidget {
