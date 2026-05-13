@@ -322,6 +322,7 @@ class _SongsPageState extends State<SongsPage>
   }
 
   Widget _buildHeader(List<Song> songs, Color cardColor, bool isDark) {
+    final appState = context.watch<AppState>();
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -343,6 +344,18 @@ class _SongsPageState extends State<SongsPage>
           ),
           const SizedBox(width: 12),
           Text('${songs.length} Songs', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+          const Spacer(),
+          IconButton(
+            icon: Icon(
+              appState.sortOrder == 'A-Z' ? Icons.sort_by_alpha : Icons.sort_by_alpha_outlined,
+              color: const Color(0xFFFF0000),
+            ),
+            onPressed: () {
+              final newOrder = appState.sortOrder == 'A-Z' ? 'Z-A' : 'A-Z';
+              appState.setSortOrder(newOrder);
+              NotificationUtils.showToast(context, 'Sorted $newOrder', icon: Icons.sort);
+            },
+          ),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.sort, color: Color(0xFFFF0000)),
@@ -453,26 +466,48 @@ class _SongsPageState extends State<SongsPage>
   }
 
   void _showSortModal() {
+    final appState = context.read<AppState>();
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.title),
-            title: const Text('Sort by Title'),
-            onTap: () { setState(() => _sortOption = 'song'); Navigator.pop(ctx); },
-            trailing: _sortOption == 'song' ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final cardColor = appState.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+        return Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Sort by Artist'),
-            onTap: () { setState(() => _sortOption = 'artist'); Navigator.pop(ctx); },
-            trailing: _sortOption == 'artist' ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSheetHandle(),
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Sort Songs', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFFF0000))),
+              ),
+              ListTile(
+                leading: const Icon(Icons.sort_by_alpha, color: Color(0xFFFF0000)),
+                title: const Text('Title: A to Z'),
+                trailing: appState.sortOrder == 'A-Z' ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
+                onTap: () {
+                  appState.setSortOrder('A-Z');
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.sort_by_alpha, color: Color(0xFFFF0000)),
+                title: const Text('Title: Z to A'),
+                trailing: appState.sortOrder == 'Z-A' ? const Icon(Icons.check, color: Color(0xFFFF0000)) : null,
+                onTap: () {
+                  appState.setSortOrder('Z-A');
+                  Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
-          const SizedBox(height: 20),
-        ],
-      ),
+        );
+      },
     );
   }
 }

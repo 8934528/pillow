@@ -237,7 +237,16 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       return StreamBuilder<Duration?>(
                         stream: appState.durationStream,
                         builder: (context, durationSnapshot) {
-                          final duration = durationSnapshot.data ?? Duration.zero;
+                          final streamDuration = durationSnapshot.data ?? Duration.zero;
+                          Duration duration = streamDuration;
+                          if (streamDuration == Duration.zero && song.duration.isNotEmpty && song.duration != '0:00') {
+                            final parts = song.duration.split(':');
+                            if (parts.length == 2) {
+                              duration = Duration(minutes: int.tryParse(parts[0]) ?? 0, seconds: int.tryParse(parts[1]) ?? 0);
+                            } else if (parts.length == 3) {
+                              duration = Duration(hours: int.tryParse(parts[0]) ?? 0, minutes: int.tryParse(parts[1]) ?? 0, seconds: int.tryParse(parts[2]) ?? 0);
+                            }
+                          }
 
                           String formatDuration(Duration d) {
                             final min = d.inMinutes;

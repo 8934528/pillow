@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_state.dart';
 import '../utils/notification_utils.dart';
+
 import 'now_playing.dart';
 
 class OnlineSearchPage extends StatefulWidget {
