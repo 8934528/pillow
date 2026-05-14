@@ -456,7 +456,7 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                 if (_isTimerRunning)
                   Container(
                     height: 2,
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: 4),
                     child: AnimatedBuilder(
                       animation: _timerAnimation,
                       builder: (context, child) {
@@ -468,6 +468,50 @@ class _MiniPlayerState extends State<MiniPlayer> with TickerProviderStateMixin {
                       },
                     ),
                   ),
+
+                // Seek Bar
+                StreamBuilder<Duration>(
+                  stream: appState.positionStream,
+                  builder: (context, positionSnapshot) {
+                    final position = positionSnapshot.data ?? Duration.zero;
+                    return StreamBuilder<Duration?>(
+                      stream: appState.durationStream,
+                      builder: (context, durationSnapshot) {
+                        final streamDuration = durationSnapshot.data ?? Duration.zero;
+                        Duration duration = streamDuration;
+                        if (streamDuration == Duration.zero && song.duration.isNotEmpty && song.duration != '0:00') {
+                          final parts = song.duration.split(':');
+                          if (parts.length == 2) {
+                            duration = Duration(minutes: int.tryParse(parts[0]) ?? 0, seconds: int.tryParse(parts[1]) ?? 0);
+                          } else if (parts.length == 3) {
+                            duration = Duration(hours: int.tryParse(parts[0]) ?? 0, minutes: int.tryParse(parts[1]) ?? 0, seconds: int.tryParse(parts[2]) ?? 0);
+                          }
+                        }
+                        
+                        return SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 2.0,
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.0),
+                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 10.0),
+                            activeTrackColor: moodColor,
+                            inactiveTrackColor: moodColor.withValues(alpha: 0.1),
+                          ),
+                          
+                          child: SizedBox(
+                            height: 16, // Thin interactive area
+                            child: Slider(
+                              value: position.inMilliseconds.toDouble().clamp(0.0, duration.inMilliseconds.toDouble() > 0 ? duration.inMilliseconds.toDouble() : 1.0),
+                              max: duration.inMilliseconds.toDouble() > 0 ? duration.inMilliseconds.toDouble() : 1.0,
+                              onChanged: (val) {
+                                appState.seek(Duration(milliseconds: val.round()));
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
                 Row(
                   children: [
                     Container(

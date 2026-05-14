@@ -220,14 +220,15 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           // Details
           Expanded(
             flex: 2,
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(song.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
                   Text(song.artist, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   // Progress
                   StreamBuilder<Duration>(
@@ -237,7 +238,16 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       return StreamBuilder<Duration?>(
                         stream: appState.durationStream,
                         builder: (context, durationSnapshot) {
-                          final duration = durationSnapshot.data ?? Duration.zero;
+                          final streamDuration = durationSnapshot.data ?? Duration.zero;
+                          Duration duration = streamDuration;
+                          if (streamDuration == Duration.zero && song.duration.isNotEmpty && song.duration != '0:00') {
+                            final parts = song.duration.split(':');
+                            if (parts.length == 2) {
+                              duration = Duration(minutes: int.tryParse(parts[0]) ?? 0, seconds: int.tryParse(parts[1]) ?? 0);
+                            } else if (parts.length == 3) {
+                              duration = Duration(hours: int.tryParse(parts[0]) ?? 0, minutes: int.tryParse(parts[1]) ?? 0, seconds: int.tryParse(parts[2]) ?? 0);
+                            }
+                          }
 
                           String formatDuration(Duration d) {
                             final min = d.inMinutes;
@@ -277,7 +287,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16), // Reduced from 24
 
                   // Controls
                   Row(

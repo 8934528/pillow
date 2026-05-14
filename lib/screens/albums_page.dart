@@ -51,15 +51,7 @@ class AlbumsPage extends StatelessWidget {
             child: IconButton(
               icon: const Icon(Icons.search, size: 22),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Search coming soon!'),
-                    backgroundColor: const Color(0xFFFF5349),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                );
+                // ... search logic
               },
             ),
           ),
@@ -72,19 +64,17 @@ class AlbumsPage extends StatelessWidget {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                   sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.8,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final album = albums[index];
-                        final color =
-                            albumColors[index % albumColors.length];
-                        return _buildAlbumCard(context, album,
+                        final color = albumColors[index % albumColors.length];
+                        return _buildAlbumFolder(context, album,
                             appState.songsForAlbum(album), color,
                             cardColor, textPrimary, appState);
                       },
@@ -97,7 +87,7 @@ class AlbumsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAlbumCard(
+  Widget _buildAlbumFolder(
     BuildContext context,
     String album,
     List<Song> songs,
@@ -112,54 +102,65 @@ class AlbumsPage extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              blurRadius: 8,
-              spreadRadius: 1,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Album art area
-            Container(
-              height: 110,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    accentColor.withValues(alpha: 0.3),
-                    accentColor.withValues(alpha: 0.8),
-                  ],
+            // Folder Icon / Art area
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [accentColor.withValues(alpha: 0.1), accentColor.withValues(alpha: 0.2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Center(
-                child: Icon(Icons.album, color: Colors.white, size: 48),
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(Icons.folder_shared, color: accentColor.withValues(alpha: 0.4), size: 80),
+                      const Icon(Icons.album, color: Colors.white, size: 36),
+                    ],
+                  ),
+                ),
               ),
             ),
+            // Info area
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(album,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: textPrimary),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2),
+                  Text(
+                    album,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    '${songs.length} track${songs.length == 1 ? '' : 's'}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    '${songs.length} Tracks',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),

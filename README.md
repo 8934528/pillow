@@ -10,9 +10,9 @@
 
 <div align="center">
 
-| Songs Library | Now Playing | Favourites | Drive Mode |
-|---------------------------|--------------------------|------------|------------|
-| <img src="assets/1.png" width="100%" /> | <img src="assets/2.png" width="100%" /> | <img src="assets/3.png" width="100%" /> | <img src="assets/4.png" width="100%" /> |
+| Songs Library | Now Playing | Favourites | Drive Mode | Online Search |
+|---------------------------|--------------------------|------------|------------|---------------|
+| <img src="assets/1.png" width="100%" /> | <img src="assets/2.png" width="100%" /> | <img src="assets/3.png" width="100%" /> | <img src="assets/4.png" width="100%" /> | <img src="assets/5.png" width="100%" /> |
 
 </div>
 
@@ -104,23 +104,29 @@ For detailed installation instructions, please refer to [SETUP.md](SETUP.md).
       lib/
       ├── main.dart                 # Main application entry point
       ├── models/
-      │   └── song_model.dart       # Song data model and mock data
+      │   ├── mood_model.dart       # Mood data model
+      │   └── song_model.dart       # Song data model
+      ├── providers/
+      │   └── app_state.dart        # Main app state provider
       ├── screens/
       │   ├── songs_page.dart       # Songs library view
       │   ├── artists_page.dart     # Artists library view
       │   ├── playlists_page.dart   # Playlists management
       │   ├── albums_page.dart      # Albums library view
       │   ├── favourites_page.dart  # Favorites collection
+      │   ├── mood_page.dart        # Mood-based player
       │   ├── now_playing.dart      # Full-screen player
-      │   ├── online_search_page.dart # Online YouTube search (SerpApi)
+      │   ├── online_search_page.dart # Online YouTube search
+      │   ├── equalizer_page.dart   # Audio equalizer
       │   ├── settings.dart         # App settings
       │   ├── mode.dart             # Playback modes
-      │   └── drive_mode.dart       # Driving mode (placeholder)
+      │   └── drive_mode.dart       # Driving mode
       ├── services/                 # API & External Services
       │   ├── serp_service.dart     # SerpApi wrapper
       │   └── youtube_service.dart  # YouTube search implementation
-      ├── widgets/                  # Custom widgets
-      └── utils/                    # Utilities
+      ├── utils/                    # Utilities
+      │   └── notification_utils.dart # Toasts and Alerts
+      └── widgets/                  # Custom widgets (Future use)
 
 ---
 

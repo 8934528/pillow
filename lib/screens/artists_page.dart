@@ -43,15 +43,7 @@ class ArtistsPage extends StatelessWidget {
             child: IconButton(
               icon: const Icon(Icons.search, size: 22),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Search coming soon!'),
-                    backgroundColor: const Color(0xFFFF5349),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                );
+                // ... search logic
               },
             ),
           ),
@@ -63,9 +55,15 @@ class ArtistsPage extends StatelessWidget {
               slivers: [
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                  sliver: SliverList(
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.8,
+                    ),
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildArtistCard(
+                      (context, index) => _buildArtistFolder(
                           context, artists[index], appState, cardColor, textPrimary),
                       childCount: artists.length,
                     ),
@@ -76,202 +74,283 @@ class ArtistsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildArtistCard(BuildContext context, String artist,
+  Widget _buildArtistFolder(BuildContext context, String artist,
       AppState appState, Color cardColor, Color textPrimary) {
     final songs = appState.songsForArtist(artist);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 8,
-            spreadRadius: 1,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _showArtistDetail(context, artist, songs, appState),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF5349), Color(0xFFFF0000)],
-                    ),
-                    borderRadius: BorderRadius.circular(28),
+    final accentColor = const Color(0xFFFF0000);
+    
+    return GestureDetector(
+      onTap: () => _showArtistDetail(context, artist, songs, appState),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Folder Icon / Avatar area
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [accentColor.withValues(alpha: 0.1), accentColor.withValues(alpha: 0.2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Center(
-                    child: Text(
-                      artist[0].toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22),
-                    ),
-                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Text(artist,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: textPrimary),
-                          overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${songs.length} song${songs.length == 1 ? '' : 's'}',
-                          style: TextStyle(
-                              color: Colors.grey[600], fontSize: 12),
+                      Icon(Icons.folder, color: accentColor.withValues(alpha: 0.4), size: 80),
+                      Text(
+                        artist[0].toUpperCase(),
+                        style: TextStyle(
+                          color: accentColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 32,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.grey[400]),
-              ],
+              ),
             ),
-          ),
+            // Info area
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Column(
+                children: [
+                  Text(
+                    artist,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${songs.length} Tracks',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _showArtistDetail(BuildContext context, String artist, List<Song> songs,
-      AppState appState) {
+  void _showArtistDetail(BuildContext context, String artist, List<Song> songs, AppState appState) {
     final isDark = appState.isDarkMode;
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final accentColor = const Color(0xFFFF0000);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.65,
-          minChildSize: 0.4,
-          maxChildSize: 0.9,
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
           builder: (ctx, scrollCtrl) {
             return Container(
               decoration: BoxDecoration(
                 color: cardColor,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(25)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2)),
+                  // Handle
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      width: 48,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
                   ),
+                  
+                  // Header section
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                     child: Row(
                       children: [
+                        // Artist Avatar/Icon
                         Container(
-                          width: 50,
-                          height: 50,
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                                colors: [Color(0xFFFF5349), Color(0xFFFF0000)]),
-                            borderRadius: BorderRadius.circular(25),
+                            gradient: LinearGradient(
+                              colors: [accentColor, accentColor.withValues(alpha: 0.7)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentColor.withValues(alpha: 0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
                           child: Center(
                             child: Text(
                               artist[0].toUpperCase(),
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 36,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 20),
+                        // Artist Info
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(artist,
-                                  style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFFF0000))),
-                              Text('${songs.length} songs',
+                              Text(
+                                artist,
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                  letterSpacing: -0.5,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '${songs.length} Tracks',
                                   style: TextStyle(
-                                      fontSize: 13, color: Colors.grey[600])),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: accentColor,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Divider(height: 1),
+                  
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Divider(thickness: 0.5),
+                  ),
+                  
+                  // Songs List
                   Expanded(
                     child: ListView.builder(
                       controller: scrollCtrl,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       itemCount: songs.length,
                       itemBuilder: (ctx, i) {
                         final song = songs[i];
-                        return ListTile(
-                          leading: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              gradient: RadialGradient(
-                                colors: [
-                                  const Color(0xFFFF0000)
-                                      .withValues(alpha: 0.2),
-                                  const Color(0xFFFF0000)
-                                      .withValues(alpha: 0.8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.music_note,
-                                color: Colors.white, size: 20),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.transparent,
                           ),
-                          title: Text(song.title,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text(song.album,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            leading: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.music_note_rounded,
+                                  color: accentColor,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              song.title,
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[600])),
-                          trailing: Text(song.duration,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: textColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              song.album,
                               style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12)),
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            appState.playSong(song);
-                            Navigator.push(
-                              context,
-                              SlideUpPageRoute(
-                                  builder: (_) => const NowPlayingPage()),
-                            );
-                          },
+                                fontSize: 13,
+                                color: isDark ? Colors.white60 : Colors.black54,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: Text(
+                              song.duration,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.white38 : Colors.black38,
+                              ),
+                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              appState.playSong(song);
+                              Navigator.push(
+                                context,
+                                SlideUpPageRoute(builder: (_) => const NowPlayingPage()),
+                              );
+                            },
+                          ),
                         );
                       },
                     ),

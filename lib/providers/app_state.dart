@@ -1,14 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;
 
 import '../models/song_model.dart';
 import '../models/mood_model.dart';
 import '../services/youtube_service.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 
 class AppState extends ChangeNotifier {
   // Playback
@@ -17,6 +16,7 @@ class AppState extends ChangeNotifier {
   bool _isShuffleOn = false;
   bool _isRepeatOn = false;
   late final AudioPlayer _audioPlayer;
+  final OnAudioQuery _audioQuery = OnAudioQuery();
   AndroidEqualizer? _androidEqualizer;
   AndroidEqualizerParameters? _equalizerParameters;
   Song? get currentSong => _currentSong;
@@ -67,6 +67,10 @@ class AppState extends ChangeNotifier {
   List<double> get equalizerGains => _equalizerGains;
   String get activePreset => _activePreset;
 
+  // Sorting
+  String _sortOrder = 'A-Z'; // 'A-Z' or 'Z-A'
+  String get sortOrder => _sortOrder;
+
   AppState() {
     _initAudio();
   }
@@ -90,12 +94,23 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       
       if (state.processingState == ProcessingState.completed) {
-        if (_isRepeatOn) {
-          if (_currentSong != null) playSong(_currentSong!);
-        } else {
-          nextSong();
-        }
+        Future.delayed(const Duration(seconds: 1), () {
+          if (_isRepeatOn) {
+            if (_currentSong != null) playSong(_currentSong!);
+          } else {
+            nextSong();
+          }
+        });
       }
+    });
+
+    // Listen for playback errors to prevent crashes
+    _audioPlayer.playbackEventStream.listen((event) {
+      // Log errors but don't crash
+    }, onError: (Object e, StackTrace st) {
+      debugPrint('Audio Player Error: $e');
+      _isPlaying = false;
+      notifyListeners();
     });
   }
 
@@ -127,20 +142,47 @@ class AppState extends ChangeNotifier {
     _currentSong = song;
     notifyListeners();
     try {
+      await _audioPlayer.stop(); // Always stop before loading new source
+      
       if (song.isOnline && song.filePath != null) {
+        debugPrint('Attempting to play online song: ${song.title}');
         final streamUrl = await YouTubeService.getAudioStreamUrl(song.filePath!);
+        
         if (streamUrl != null) {
-          await _audioPlayer.setUrl(streamUrl);
+          debugPrint('Got stream URL: $streamUrl');
+          // On Windows, some URLs might need specific headers or formats
+          // but setUrl is the standard way.
+          await _audioPlayer.setAudioSource(
+            AudioSource.uri(Uri.parse(streamUrl)),
+            initialPosition: Duration.zero,
+          );
           await _audioPlayer.play();
+        } else {
+          debugPrint('Failed to get stream URL for ${song.title}');
+          _isPlaying = false;
+          notifyListeners();
         }
       } else if (song.filePath != null && !kIsWeb) {
-        await _audioPlayer.setFilePath(song.filePath!);
-        await _audioPlayer.play();
+        final file = File(song.filePath!);
+        if (await file.exists()) {
+          await _audioPlayer.setFilePath(song.filePath!);
+          await _audioPlayer.play();
+        } else {
+          debugPrint('File does not exist: ${song.filePath}');
+          _isPlaying = false;
+          notifyListeners();
+        }
       } else {
-        await _audioPlayer.play();
+        // Fallback for cases without file path or on web
+        if (song.filePath != null && kIsWeb) {
+           await _audioPlayer.setUrl(song.filePath!);
+           await _audioPlayer.play();
+        }
       }
     } catch (e) {
-      debugPrint('Error playing song: $e');
+      debugPrint('Error playing song "${song.title}": $e');
+      _isPlaying = false;
+      notifyListeners();
     }
   }
 
@@ -148,10 +190,15 @@ class AppState extends ChangeNotifier {
     final link = item['link'];
     if (link == null) return;
     
+    final durationSeconds = int.tryParse(item['duration'] ?? '0') ?? 0;
+    final min = durationSeconds ~/ 60;
+    final sec = (durationSeconds % 60).toString().padLeft(2, '0');
+    final formattedDuration = '$min:$sec';
+
     final song = Song(
       title: item['title'] ?? 'Unknown',
       artist: item['channel'] ?? 'Unknown',
-      duration: '0:00',
+      duration: formattedDuration,
       album: 'Online Search',
       isOnline: true,
       filePath: link,
@@ -234,42 +281,90 @@ class AppState extends ChangeNotifier {
 
     try {
       if (!kIsWeb && Platform.isAndroid) {
-        if (await Permission.audio.isDenied) {
-          await Permission.audio.request();
+        // Request permissions
+        bool hasPermission = await _audioQuery.permissionsStatus();
+        if (!hasPermission) {
+          hasPermission = await _audioQuery.permissionsRequest();
         }
-        var storageStatus = await Permission.storage.request();
-        if (storageStatus.isDenied) {
+
+        if (!hasPermission) {
           _isScanning = false;
           notifyListeners();
           return;
         }
-      }
 
-      Directory? musicDir;
-      if (!kIsWeb && Platform.isWindows) {
-        // Music folder on Windows
-        final home = Platform.environment['USERPROFILE'];
-        if (home != null) {
-          musicDir = Directory(p.join(home, 'Music'));
+        // Query all songs using MediaStore
+        final List<SongModel> songs = await _audioQuery.querySongs(
+          sortType: null,
+          orderType: OrderType.ASC_OR_SMALLER,
+          uriType: UriType.EXTERNAL,
+          ignoreCase: true,
+        );
+
+        final List<Song> foundSongs = songs.map((s) {
+          // Calculate duration string from milliseconds
+          final durationMs = s.duration ?? 0;
+          final min = (durationMs ~/ 1000) ~/ 60;
+          final sec = ((durationMs ~/ 1000) % 60).toString().padLeft(2, '0');
+          
+          return Song(
+            title: s.title,
+            artist: s.artist == '<unknown>' ? 'Unknown Artist' : s.artist!,
+            duration: '$min:$sec',
+            album: s.album == '<unknown>' ? 'Unknown Album' : s.album!,
+            isFavorite: false,
+            filePath: s.data,
+            isOnline: false,
+          );
+        }).toList();
+
+        if (foundSongs.isNotEmpty) {
+          _songs = foundSongs;
         }
-      } else if (!kIsWeb) {
-        musicDir = await getExternalStorageDirectory();
-      }
+      } else if (!kIsWeb && Platform.isWindows) {
 
-      if (musicDir != null && await musicDir.exists()) {
+        final home = Platform.environment['USERPROFILE'];
+        final List<Directory> scanDirs = [];
+        if (home != null) {
+          scanDirs.add(Directory(p.join(home, 'Music')));
+          scanDirs.add(Directory(p.join(home, 'Downloads')));
+          scanDirs.add(Directory(p.join(home, 'Documents')));
+          scanDirs.add(Directory(p.join(home, 'Pictures')));
+          scanDirs.add(Directory(p.join(home, 'Desktop')));
+        }
+
+        // Check for external drives (D: to Z:)
+        for (var letter in 'DEFGHIJKLMNOPQRSTUVWXYZ'.split('')) {
+          final drive = Directory('$letter:\\');
+          try {
+            if (await drive.exists()) {
+              scanDirs.add(drive);
+            }
+          } catch (_) {
+          }
+        }
+
         final List<Song> foundSongs = [];
-        await for (var entity in musicDir.list(recursive: true, followLinks: false)) {
-          if (entity is File && entity.path.toLowerCase().endsWith('.mp3')) {
-            final fileName = p.basenameWithoutExtension(entity.path);
-            foundSongs.add(Song(
-              title: fileName,
-              artist: 'Unknown Artist',
-              duration: '3:00',
-              album: 'Local Music',
-              isFavorite: false,
-              filePath: entity.path,
-              isOnline: false,
-            ));
+        for (var musicDir in scanDirs) {
+          if (await musicDir.exists()) {
+            try {
+              await for (var entity in musicDir.list(recursive: true, followLinks: false)) {
+                if (entity is File && entity.path.toLowerCase().endsWith('.mp3')) {
+                  final fileName = p.basenameWithoutExtension(entity.path);
+                  foundSongs.add(Song(
+                    title: fileName,
+                    artist: 'Unknown Artist',
+                    duration: '0:00', 
+                    album: 'Local Music',
+                    isFavorite: false,
+                    filePath: entity.path,
+                    isOnline: false,
+                  ));
+                }
+              }
+            } catch (e) {
+              debugPrint('Error scanning $musicDir: $e');
+            }
           }
         }
         
@@ -377,12 +472,12 @@ class AppState extends ChangeNotifier {
 
   void setEqualizerPreset(String preset) {
     _activePreset = preset;
+    setEqualizer(true); // Automatically enable equalizer when a preset is selected
     switch (preset) {
       case 'Flat':
         _equalizerGains = [0.0, 0.0, 0.0, 0.0, 0.0];
         break;
       case 'Pop':
-        _equalizerGains = [1.5, 2.5, 0.5, 1.0, 2.0];
         break;
       case 'Rock':
         _equalizerGains = [3.5, 2.0, -1.0, 1.5, 3.0];
@@ -430,5 +525,20 @@ class AppState extends ChangeNotifier {
   void clearOnlineResults() {
     _onlineSearchResults = [];
     notifyListeners();
+  }
+
+  // Sorting Logic
+  void setSortOrder(String order) {
+    _sortOrder = order;
+    _applySort();
+    notifyListeners();
+  }
+
+  void _applySort() {
+    if (_sortOrder == 'A-Z') {
+      _songs.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    } else {
+      _songs.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+    }
   }
 }

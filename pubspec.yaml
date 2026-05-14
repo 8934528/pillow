@@ -57,3 +57,7 @@ flutter_launcher_icons:
     image_path: "assets/pillow.png"
     background_color: "#ffffff"
     theme_color: "#ffffff"
+  windows:
+    generate: true
+    image_path: "assets/pillow.png"
+    icon_size: 256

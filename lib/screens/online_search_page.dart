@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_state.dart';
 import '../utils/notification_utils.dart';
+
 import 'now_playing.dart';
 
 class OnlineSearchPage extends StatefulWidget {
@@ -84,7 +84,7 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search YouTube movies...',
+                  hintText: 'Search YouTube music...',
                   prefixIcon: const Icon(Icons.search, color: Color(0xFF00B4DB)),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.send, color: Color(0xFF00B4DB)),
