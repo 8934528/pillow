@@ -94,7 +94,6 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       
       if (state.processingState == ProcessingState.completed) {
-        
         Future.delayed(const Duration(seconds: 1), () {
           if (_isRepeatOn) {
             if (_currentSong != null) playSong(_currentSong!);
@@ -103,6 +102,15 @@ class AppState extends ChangeNotifier {
           }
         });
       }
+    });
+
+    // Listen for playback errors to prevent crashes
+    _audioPlayer.playbackEventStream.listen((event) {
+      // Log errors but don't crash
+    }, onError: (Object e, StackTrace st) {
+      debugPrint('Audio Player Error: $e');
+      _isPlaying = false;
+      notifyListeners();
     });
   }
 
@@ -134,26 +142,47 @@ class AppState extends ChangeNotifier {
     _currentSong = song;
     notifyListeners();
     try {
+      await _audioPlayer.stop(); // Always stop before loading new source
+      
       if (song.isOnline && song.filePath != null) {
-        debugPrint('Attempting to play online song: ${song.title} at ${song.filePath}');
+        debugPrint('Attempting to play online song: ${song.title}');
         final streamUrl = await YouTubeService.getAudioStreamUrl(song.filePath!);
+        
         if (streamUrl != null) {
           debugPrint('Got stream URL: $streamUrl');
-          await _audioPlayer.stop(); // Stop current before setting new source
-          await _audioPlayer.setUrl(streamUrl);
+          // On Windows, some URLs might need specific headers or formats
+          // but setUrl is the standard way.
+          await _audioPlayer.setAudioSource(
+            AudioSource.uri(Uri.parse(streamUrl)),
+            initialPosition: Duration.zero,
+          );
           await _audioPlayer.play();
         } else {
           debugPrint('Failed to get stream URL for ${song.title}');
+          _isPlaying = false;
+          notifyListeners();
         }
       } else if (song.filePath != null && !kIsWeb) {
-        await _audioPlayer.stop();
-        await _audioPlayer.setFilePath(song.filePath!);
-        await _audioPlayer.play();
+        final file = File(song.filePath!);
+        if (await file.exists()) {
+          await _audioPlayer.setFilePath(song.filePath!);
+          await _audioPlayer.play();
+        } else {
+          debugPrint('File does not exist: ${song.filePath}');
+          _isPlaying = false;
+          notifyListeners();
+        }
       } else {
-        await _audioPlayer.play();
+        // Fallback for cases without file path or on web
+        if (song.filePath != null && kIsWeb) {
+           await _audioPlayer.setUrl(song.filePath!);
+           await _audioPlayer.play();
+        }
       }
     } catch (e) {
-      debugPrint('Error playing song: $e');
+      debugPrint('Error playing song "${song.title}": $e');
+      _isPlaying = false;
+      notifyListeners();
     }
   }
 

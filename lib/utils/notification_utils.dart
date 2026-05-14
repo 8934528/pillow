@@ -2,6 +2,7 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:delightful_toast/delight_toast.dart';
 import 'package:delightful_toast/toast/components/toast_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 extension StringExtension on String {
   String capitalize() {
@@ -14,8 +15,8 @@ class NotificationUtils {
   static void showSuccessAlert(BuildContext context, String? message, {String? title}) {
     AwesomeDialog(
       context: context,
-      dialogType: DialogType.success,
-      animType: AnimType.rightSlide,
+      dialogType: kIsWeb ? DialogType.noHeader : DialogType.success,
+      animType: kIsWeb ? AnimType.scale : AnimType.rightSlide,
       title: title ?? 'Success',
       desc: message ?? '',
       btnOkOnPress: () {},
@@ -27,8 +28,8 @@ class NotificationUtils {
   static void showErrorAlert(BuildContext context, String? message, {String? title}) {
     AwesomeDialog(
       context: context,
-      dialogType: DialogType.error,
-      animType: AnimType.scale,
+      dialogType: kIsWeb ? DialogType.noHeader : DialogType.error,
+      animType: kIsWeb ? AnimType.scale : AnimType.scale,
       title: title ?? 'Error',
       desc: message ?? '',
       btnOkOnPress: () {},
@@ -40,8 +41,8 @@ class NotificationUtils {
   static void showInfoAlert(BuildContext context, String? message, {String? title}) {
     AwesomeDialog(
       context: context,
-      dialogType: DialogType.info,
-      animType: AnimType.bottomSlide,
+      dialogType: kIsWeb ? DialogType.noHeader : DialogType.info,
+      animType: kIsWeb ? AnimType.scale : AnimType.bottomSlide,
       title: title ?? 'Information',
       desc: message ?? '',
       btnOkOnPress: () {},

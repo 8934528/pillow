@@ -1,7 +1,6 @@
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
 class YouTubeService {
   static final _logger = Logger();
@@ -21,7 +20,11 @@ class YouTubeService {
         'duration': v.duration?.inSeconds.toString() ?? '0',
       }).toList();
     } catch (e) {
-      _logger.e('Error searching YouTube: $e');
+      if (kIsWeb) {
+        _logger.e('YouTube Search Error (Web): $e. This is likely a CORS restriction. Running "flutter run -d chrome --web-browser-flag "--disable-web-security"" or using a proxy might help during development.');
+      } else {
+        _logger.e('Error searching YouTube: $e');
+      }
     }
     
     return [];
@@ -33,8 +36,16 @@ class YouTubeService {
       final video = await yt.videos.get(videoUrl);
       final manifest = await yt.videos.streamsClient.getManifest(video.id);
       
-      // Get the highest quality audio stream
-      final audioStream = manifest.audioOnly.withHighestBitrate();
+      if (manifest.audioOnly.isEmpty) {
+        _logger.w('No audio streams found for video: $videoUrl');
+        return null;
+      }
+
+      // On Windows/Web, M4A (MP4) is generally more stable
+      final audioStreams = manifest.audioOnly.where((s) => s.container.name == 'mp4').toList();
+      final audioStream = audioStreams.isNotEmpty 
+          ? audioStreams.withHighestBitrate() 
+          : manifest.audioOnly.withHighestBitrate();
       
       // Return the URL
       return audioStream.url.toString();

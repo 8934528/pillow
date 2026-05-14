@@ -20,7 +20,7 @@ class SongsPage extends StatefulWidget {
 
 class _SongsPageState extends State<SongsPage>
     with SingleTickerProviderStateMixin {
-  String _sortOption = 'song';
+  final String _sortOption = 'song';
   bool _isSearchOpen = false;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();

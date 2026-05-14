@@ -220,14 +220,15 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           // Details
           Expanded(
             flex: 2,
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(song.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
                   Text(song.artist, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   // Progress
                   StreamBuilder<Duration>(
@@ -286,7 +287,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16), // Reduced from 24
 
                   // Controls
                   Row(

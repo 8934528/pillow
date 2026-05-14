@@ -84,7 +84,7 @@ class _OnlineSearchPageState extends State<OnlineSearchPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search YouTube movies...',
+                  hintText: 'Search YouTube music...',
                   prefixIcon: const Icon(Icons.search, color: Color(0xFF00B4DB)),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.send, color: Color(0xFF00B4DB)),
